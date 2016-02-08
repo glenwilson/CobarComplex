@@ -1,38 +1,8 @@
-from pickle_storage import PickleStorage
-import cPickle as pickle
-
-class Options(object):
-    def __init__(self, prime, degree_bounds, numpcs, coprod_db):
-        self.prime = prime
-        self.bounds = degree_bounds
-        self.numpcs = numpcs
-        self.coprod_db = coprod_db
-        self.db_flag = False
-        
-    def get_prime(self):
-        return self.prime
-
-    def get_bounds(self):
-        return self.bounds
-
-    def get_numpcs(self):
-        return self.numpcs
-
-    def get_coprod_db(self):
-        if not self.db_flag:
-            self.coprod_db.load_dictionary()
-            self.db_flag = True
-        return self.coprod_db
-
-    def close_coprod_db(self):
-        self.get_coprod_db().shutdown()
-        self.db_flag = False
-
-
-opts = Options(17, 10, 2, PickleStorage("coprod_db.pickle"))
-               
+from options import opts
+from math import log
 import random 
 import copy
+
 class Monomial(object):
     """terms is a list of tuples of the form (y, i) where y is a string
     "t" or "x" and i is a natural number. We assume terms of the form
@@ -85,6 +55,29 @@ class Monomial(object):
                 out += TensorPolynomial([TensorMonomial([Monomial([("x", term[1]-j)],1)**(opts.prime**j),\
                                                          Monomial([("t", j)],1)],1)])
             return out
+
+    @staticmethod
+    def tau_list(indices):
+        out = []
+        for i in range(len(indices)):
+            for j in range(indices[i]):
+                out.append(("t",i))
+        return Monomial(out, 1)
+
+    @staticmethod
+    def xi_list(indices):
+        out = []
+        for i in range(len(indices)):
+            for j in range(indices[i]):
+                out.append(("x", i+1))
+        return Monomial(out, 1)
+
+    @staticmethod
+    def tau_xi_list(pair):
+        xx = Monomial.tau_list(pair[0])
+        yy = Monomial.xi_list(pair[1])
+        return xx * yy
+        
     def __init__(self, terms, coeff):
         self.terms = terms
         self.coeff = coeff
@@ -291,7 +284,8 @@ class Polynomial(object):
             similar = [ x for x in stack if str(x)[2:] == str(mon)[2:]]
             coefficient = mon.get_coeff()
             for x in similar:
-                coefficient += x.get_coeff() % opts.prime
+                coefficient = (coefficient + x.get_coeff()) \
+                              % opts.prime
                 stack.remove(x)
             if coefficient:
                 outsum.append(Monomial(mon.get_terms(), coefficient))
@@ -360,9 +354,9 @@ class TensorMonomial(object):
         return self.coeff
     
     def get_degree(self):
-        adeg = pair[0].get_degree()
-        bdeg = pair[1].get_degree()
-        if coeff:
+        adeg = self.pair[0].get_degree()
+        bdeg = self.pair[1].get_degree()
+        if self.coeff:
             return (adeg[0] + bdeg[0], adeg[1] + bdeg[1])
         else:
             return (0,0)
@@ -380,17 +374,17 @@ class TensorMonomial(object):
         """
         self.pair[0].simplify()
         self.pair[1].simplify()
-        newcoeff = self.pair[0].coeff * self.pair[1].coeff * self.coeff % opts.prime
+        newcoeff = (self.pair[0].coeff * self.pair[1].coeff * self.coeff) % opts.prime
         self.pair[0].coeff = 1
         self.pair[1].coeff = 1
         self.coeff = newcoeff
         if not self.coeff:
-            self.pair[0] = Monomial([],0)
-            self.pair[1] = Monomial([],0)
+            self.pair[0] = Monomial([],1)
+            self.pair[1] = Monomial([],1)
 
     def __mul__(self, other):
         newpair = [self.pair[0] * other.pair[0], self.pair[1] * other.pair[1] ]
-        newcoeff = self.coeff * other.coeff % opts.prime
+        newcoeff = (self.coeff * other.coeff) % opts.prime
         return TensorMonomial(newpair, newcoeff)
 
     def __eq__(self, other):
@@ -480,7 +474,8 @@ class TensorPolynomial(object):
             similar = [ x for x in stack if mon.monomials_equal(x) ]
             coefficient = mon.get_coeff()
             for x in similar:
-                coefficient += x.get_coeff() % opts.prime
+                coefficient = (coefficient + x.get_coeff()) \
+                              % opts.prime
                 stack.remove(x)
             if coefficient:
                 outsum.append(TensorMonomial(mon.get_pair(), \
@@ -511,6 +506,8 @@ class TensorPolynomial(object):
             tmon._reduce()
         self.simplify()
 
+#######################################################
+        
 class CobarMonomial(object):
     """
     This is a generalized TensorMonomial object 
@@ -528,8 +525,11 @@ class CobarPolynomial(object):
     As we may use reduced cobar construction, should 
     can perform reduced calculations.
     """
-############################################################
+    def __init__(self, summands):
+        self.summands = summands
 
+    
+############################################################
     
 def repeats(alist):
     for i in alist:
@@ -563,3 +563,115 @@ def arePermsEqualParity(perm0, perm1):
         return True
     else:
         return False
+
+def xi_deg(J):
+    """
+    J is a list of natural numbers
+    The first term in list J corresponds to xi_1
+    """
+    out = 0
+    for i in range(len(J)):
+        out += J[i]*(2*(opts.prime**(i+1))-2)
+    return out
+
+def xi_wt(J):
+    """
+    J is a list of natural numbers
+    returns weight of xi(J)
+    """
+    out = 0
+    for i in range(len(J)):
+        out += J[i]*(opts.prime**(i+1)-1)
+    return out
+
+def tau_deg(I):
+    """
+    J is a list of natural numbers
+    First term in list I corresponds to tau_0
+    """
+    out = 0
+    for i in range(len(I)):
+        out += I[i]*(2*(opts.prime**(i))-1)
+    return out
+
+def tau_wt(I):
+    out = 0
+    for i in range(len(I)):
+        out += I[i]*(opts.prime**i - 1)
+    return out
+    
+def xi_indices():
+    """
+    Returns a list of all allowable indices J for which x(J) has 
+    degree less than degree bounds
+    """
+    indices = []
+    maximum = int(log((opts.bounds + 3)/2.0, opts.prime))
+    for i in range(maximum):
+        index = [0]*maximum
+        index[i] = 1
+        if xi_deg(index) <= opts.bounds:
+            indices.append(index)
+    j = maximum - 1
+    while j >= 0:
+        for x in indices[:]:
+            y = x[:]
+            y[j] += 1
+            while xi_deg(y) <= opts.bounds and not (y in indices):
+                indices.append(y[:])
+                y[j] += 1
+        j += (-1)
+    sort_ind = sorted(indices, key=lambda y: xi_deg(y))
+    return sort_ind
+
+def tau_indices():
+    """Returns a list of all allowable indices I for which t(I) has
+    degree less than degree bounds
+
+    """
+    indices = []
+    maximum = int(log((opts.bounds + 2)/2.0, opts.prime))
+    for i in range(maximum + 1):
+        index = [0]*(maximum+1)
+        index[i] = 1
+        if tau_deg(index) <= opts.bounds:
+            indices.append(index)
+    j = maximum
+    while j >= 0:
+        for x in indices[:]:
+            y = x[:]
+            if y[j] == 0:
+                y[j] = 1
+                if tau_deg(y) <= opts.bounds and not( y in indices):
+                    indices.append(y[:])
+        j += (-1)
+    sort_ind = sorted(indices, key=lambda y: tau_deg(y))
+    return sort_ind
+            
+def all_indices():
+    """This returns a list of pairs (I,J) where t(I)x(J) is within degree
+    bounds.
+
+    """
+    out = []
+    all_I = tau_indices()
+    #add in 0 list
+    xx = [0]*(len(all_I[0]))
+    all_I.insert(0, xx)
+    all_J = xi_indices()
+    yy = [0]*(len(all_J[0]))
+    all_J.insert(0,yy)
+    #Now go through in order and try to pair a tau index I with a xi
+    #index J, until it fails. Then move on to next tau index I.
+    for I in all_I:
+        for J in all_J:
+            if tau_deg(I) + xi_deg(J) <= opts.bounds:
+                out.append((I,J))
+            else:
+                break
+    sort_out = sorted(out, key=lambda pair: \
+                      tau_deg(pair[0]) + xi_deg(pair[1]))
+    sort_out.remove((xx, yy))
+    return sort_out
+
+    

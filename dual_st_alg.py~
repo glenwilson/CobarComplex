@@ -1,38 +1,7 @@
-from pickle_storage import PickleStorage
-import cPickle as pickle
-
-class Options(object):
-    def __init__(self, prime, degree_bounds, numpcs, coprod_db):
-        self.prime = prime
-        self.bounds = degree_bounds
-        self.numpcs = numpcs
-        self.coprod_db = coprod_db
-        self.db_flag = False
-        
-    def get_prime(self):
-        return self.prime
-
-    def get_bounds(self):
-        return self.bounds
-
-    def get_numpcs(self):
-        return self.numpcs
-
-    def get_coprod_db(self):
-        if not self.db_flag:
-            self.coprod_db.load_dictionary()
-            self.db_flag = True
-        return self.coprod_db
-
-    def close_coprod_db(self):
-        self.get_coprod_db().shutdown()
-        self.db_flag = False
-
-
-opts = Options(17, 10, 2, PickleStorage("coprod_db.pickle"))
-               
+from options import opts
 import random 
 import copy
+
 class Monomial(object):
     """terms is a list of tuples of the form (y, i) where y is a string
     "t" or "x" and i is a natural number. We assume terms of the form
@@ -291,7 +260,8 @@ class Polynomial(object):
             similar = [ x for x in stack if str(x)[2:] == str(mon)[2:]]
             coefficient = mon.get_coeff()
             for x in similar:
-                coefficient += x.get_coeff() % opts.prime
+                coefficient = (coefficient + x.get_coeff()) \
+                              % opts.prime
                 stack.remove(x)
             if coefficient:
                 outsum.append(Monomial(mon.get_terms(), coefficient))
@@ -380,7 +350,7 @@ class TensorMonomial(object):
         """
         self.pair[0].simplify()
         self.pair[1].simplify()
-        newcoeff = self.pair[0].coeff * self.pair[1].coeff * self.coeff % opts.prime
+        newcoeff = (self.pair[0].coeff * self.pair[1].coeff * self.coeff) % opts.prime
         self.pair[0].coeff = 1
         self.pair[1].coeff = 1
         self.coeff = newcoeff
@@ -390,7 +360,7 @@ class TensorMonomial(object):
 
     def __mul__(self, other):
         newpair = [self.pair[0] * other.pair[0], self.pair[1] * other.pair[1] ]
-        newcoeff = self.coeff * other.coeff % opts.prime
+        newcoeff = (self.coeff * other.coeff) % opts.prime
         return TensorMonomial(newpair, newcoeff)
 
     def __eq__(self, other):
@@ -480,7 +450,8 @@ class TensorPolynomial(object):
             similar = [ x for x in stack if mon.monomials_equal(x) ]
             coefficient = mon.get_coeff()
             for x in similar:
-                coefficient += x.get_coeff() % opts.prime
+                coefficient = (coefficient + x.get_coeff()) \
+                              % opts.prime
                 stack.remove(x)
             if coefficient:
                 outsum.append(TensorMonomial(mon.get_pair(), \
@@ -511,6 +482,8 @@ class TensorPolynomial(object):
             tmon._reduce()
         self.simplify()
 
+#######################################################
+        
 class CobarMonomial(object):
     """
     This is a generalized TensorMonomial object 
@@ -528,8 +501,11 @@ class CobarPolynomial(object):
     As we may use reduced cobar construction, should 
     can perform reduced calculations.
     """
-############################################################
+    def __init__(self, summands):
+        self.summands = summands
 
+    
+############################################################
     
 def repeats(alist):
     for i in alist:
