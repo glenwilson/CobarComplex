@@ -1,7 +1,0 @@
-from scratch import Options, CMonomial
-
-opts = Options(5, 20, 2)
-
-xx = Monomial( [("x", 1), ("x",2),("x",1),("t",3),("t",2)], 4)
-
-xx.simplify
