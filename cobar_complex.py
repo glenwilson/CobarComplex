@@ -315,9 +315,37 @@ class CobarComplex(object):
                     else:
                         break
         
-                                
+    def make_maps(self):
+        """
+        make matrices in all given bidegrees
+
+        this needs a map defined on CobarMonomial objects
+        """
+        break
 
 
+    def get_cohomology(self, filt, deg, wt):
+        """
+        returns a cohomology object corr. to filt, deg, wt
+        #Returns 0 cohomology object if deg, wt doesn't appera
+        """
+        pass
+
+    def vector_from_element(self, elt):
+        """returns vector in standard basis as determined by the
+        generate_modules algorithm corr. to elt.
+
+        """
+        pass
+
+    def element_From_vector(self, vector, filt, deg, wt):
+        """
+        returns a CobarPolynomial corresponding to vector from the 
+        standard basis in filt, deg, wt.
+        """
+        pass
+
+    
         
             
         
