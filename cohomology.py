@@ -26,12 +26,13 @@ class Cohomology(object):
         self.cohomology = None
         self.cohomology_flag = False
         self.product = ModVectorSpace([])
-        if self.A.rows == []:
-            self.A = ModMatrix.null((self.B.get_size()[1], 1))
-        elif self.B.rows == []:
-            raise TypeError
-        elif self.B.get_size()[1] != self.A.get_size()[0]:
-            raise TypeError("wrong sizes B: " + str(self.B) + str(self.B.get_size()) +  "A: " + str(self.A) + str(self.A.get_matrix()))
+        # if self.A.rows == []:
+        #     self.A = ModMatrix.null(self.B.get_size()[1], 1)
+        # elif self.B.rows == []:
+        #     raise TypeError
+        if self.B.get_size()[1] != self.A.get_size()[0]:
+            raise TypeError("wrong sizes B: " + str(self.B) + "A: " +
+                            str(self.A))
         self.extended_ker_basis = None
         self.extended_ker_basis_flag = False
     

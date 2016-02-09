@@ -125,6 +125,10 @@ class ModMatrix(object):
                     print self.col_count
                     print len(row)
                     raise TypeError("length of rows inconsistent")
+        # this may be bad
+        if self.col_count == 0:
+            self.row_count = 0
+        ################
         self.basis_change = []
         self.basis_change_flag = False
         self.rref = []

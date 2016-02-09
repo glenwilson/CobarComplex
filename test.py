@@ -358,13 +358,15 @@ def cohom_test(x,y,z,n):
     for i in range(n):
         AA = ModMatrix.random(y,z)
         BB = ModMatrix.random(x,y)
+
         if (BB * AA).is_zero():
             print"BB\n", BB, "\n"
             print "AA\n", AA, "\n"
             coh = Cohomology(BB, AA)
             print coh.get_cohomology()
 
-#cohom_test(1,3,2,50)
+#cohom_test(0,0,0,2)
+
 
 def cobar_mon(x,f,n):
     for i in range(n):
@@ -429,14 +431,88 @@ def cobar_concat(x,y,f,n):
 def cplx_test():
     C = CobarComplex()
     C.generate_modules()
-    for i in range(20):
+    for i in range(opts.bounds):
         print "module", i
         for deg in C.cplx[i]._dict:
             print "deg", deg
             for thing in C.cplx[i]._dict[deg]:
                 print thing
 
-# opts.prime = 5
-# opts.bounds = 20
-# cplx_test()
+#opts.prime = 7
+#opts.bounds = 20
+#cplx_test()
 
+def map_test(f,x,n):
+    for i in range(n):
+        xx = CobarMonomial.random(x,f)
+        print xx
+        print xx._map()
+
+#map_test(3,1,1)
+
+def summand_test(x,y,f,n):
+    for i in range(n):
+        xx = CobarMonomial.random(x,f)
+        yy = CobarPolynomial.random(x,y,f)
+        xx.simplify()
+        yy.simplify()
+        print xx
+        print yy
+        print yy.is_summand(xx), "\n"
+
+#summand_test(2,5,2,500)
+
+def vfe_test(x,f,n):
+    C= CobarComplex()
+    print "calculating complex"
+    cplx = C.get_cplx()
+    for i in range(n):
+        xx = CobarMonomial.random(x,f)
+        print "finding good xx"
+        while xx.get_degree()[0] > opts.bounds:
+            xx = CobarMonomial.random(x,f)
+        yy = xx._map()
+        vect = C.vector_from_element(yy)
+        deg = yy.get_degree()[0]
+        wt = yy.get_degree()[1]
+        for thing in C.get_cplx()[f+1]._dict[(deg,wt)]:
+            print thing
+        print "\n"
+        print xx
+        print yy
+        print vect
+
+#opts.prime=5
+#opts.bounds=15
+#vfe_test(1,1,10)
+
+def cohom_test(f):
+    C = CobarComplex()
+    C.make_maps()
+    for bideg in C.get_cplx()[f]._dict.keys():
+        d = bideg[0]
+        w = bideg[1]
+        cohom = C.get_cohomology(f,d,w)
+        print "Filt, deg, wt", f, d, w
+        cc = cohom.get_cohomology()
+        print cc
+        if cc.get_basis():
+            for vect in cc.get_basis():
+                print C.element_from_vector(vect, f,d,w)
+
+    
+opts.prime = 5
+opts.bounds = 12
+#xx = Monomial.tau_list([1,1])
+#print xx
+#yy = CobarMonomial([xx], 1, 1)
+#print yy
+#print yy._map()
+#print xx.coproduct()
+#print Monomial.tau_list([1]).coproduct()
+#print Monomial.tau_list([0,1]).coproduct()
+#cohom_test(1)
+cohom_test(2)
+#C = CobarComplex()
+#C.make_map(1)
+#C.make_map(2)

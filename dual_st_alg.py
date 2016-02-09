@@ -16,7 +16,7 @@ class Monomial(object):
     def random(length):
         terms = []
         for i in range(length):
-            randint = random.randrange(6)
+            randint = random.randrange(4)
             parity = random.randrange(2)
             if parity:
                 terms.append(("t", randint))
@@ -49,8 +49,8 @@ class Monomial(object):
             return out
         elif term[0] == "t":
             out = TensorPolynomial.null()
-            out += TensorPolynomial([TensorMonomial([Monomial.unit(), Monomial([term],1)],1)])
-            out += TensorPolynomial([TensorMonomial([Monomial.unit(), Monomial([term],1)],1)])
+            out += TensorPolynomial([TensorMonomial([Monomial.unit(), Monomial([term], 1)],1)])
+            out += TensorPolynomial([TensorMonomial([Monomial([term], 1), Monomial.unit()],1)])
             for j in range(0, term[1]):
                 out += TensorPolynomial([TensorMonomial([Monomial([("x", term[1]-j)],1)**(opts.prime**j),\
                                                          Monomial([("t", j)],1)],1)])
@@ -508,25 +508,25 @@ class TensorPolynomial(object):
 
 #######################################################
         
-class CobarMonomial(object):
-    """
-    This is a generalized TensorMonomial object 
-    which allows for more tensor factors
-    """
-    def __init__(self, factors, coeff):
-        self.factors = factors
-        self.coeff = coeff
+# class CobarMonomial(object):
+#     """
+#     This is a generalized TensorMonomial object 
+#     which allows for more tensor factors
+#     """
+#     def __init__(self, factors, coeff):
+#         self.factors = factors
+#         self.coeff = coeff
         
-class CobarPolynomial(object):
-    """
-    This is a generalized TensorPolynomial object
-    which allows for more tensor factors.
+# class CobarPolynomial(object):
+#     """
+#     This is a generalized TensorPolynomial object
+#     which allows for more tensor factors.
 
-    As we may use reduced cobar construction, should 
-    can perform reduced calculations.
-    """
-    def __init__(self, summands):
-        self.summands = summands
+#     As we may use reduced cobar construction, should 
+#     can perform reduced calculations.
+#     """
+#     def __init__(self, summands):
+#         self.summands = summands
 
     
 ############################################################
