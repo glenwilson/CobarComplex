@@ -1,0 +1,31 @@
+This program gives the user simple commands to generate the cohomology
+of the Steenrod algebra at odd primes using the cobar complex.
+
+In the file test.py, there are numerous tests to demonstrate the
+functionality of the program. Of greatest importance is the command
+cohom_test(f). This command will give a printout of the cohomology of the
+Steenrod algebra at an odd prime.
+
+To simplify the code, global variables are used with the help of the
+options class, and specifically, the Options object opts. To change
+the prime, set opts.prime = p to the prime p you desire before running
+any commands. To change the largest degree to be considered in the
+program, change opts.bounds = b as you desire.
+
+This program is in its early stages, but is functional.
+TODO:
+1) Product structure
+
+2) Massey products
+
+3) Extend existing saved cobar complex to meet the desired bounds and
+filtration length
+
+4) Implement a Monomial object which allows for exponent notation
+
+5) Use multiprocessing when making the maps, complex, and calculating
+cohomology
+
+6) Ensure functionality at the prime 2 as well. It will be slow, but
+it will allow Massey product calculations
+
