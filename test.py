@@ -490,7 +490,7 @@ def cohom_test(f):
     C = CobarComplex(f+2)
     C.get_pickled_cplx()
     #C.make_maps()
-    for i in range(1,f):
+    for i in range(1,f+1):
         for bideg in C.get_cplx()[i]._dict.keys():
             d = bideg[0]
             w = bideg[1]
@@ -504,8 +504,8 @@ def cohom_test(f):
     C.pickle_cplx()
 
     
-opts.prime = 7
-opts.bounds = 12
+opts.prime = 5
+opts.bounds = 26
 #cplx_test(3)
 cohom_test(5)
 

@@ -452,7 +452,13 @@ class CobarComplex(object):
 
         """
         pass
-        
+
+    def product_structure(self):
+        pass
+
+    def massey_products(self):
+        pass
+    
     def get_cplx(self):
         """Get this to implement unpickling. check to see if there is a
         pickled file? Or will that be too time consuming?
@@ -516,7 +522,7 @@ class CobarComplex(object):
             dom._maps[bideg] = matrix 
             
     def make_maps(self):
-        if self.map_flg = True:
+        if self.map_flag:
             return
         for i in range(self.length):
             self.make_map(i)
