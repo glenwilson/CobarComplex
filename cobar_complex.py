@@ -439,7 +439,25 @@ class CobarComplex(object):
                         break
         self.module_flag = True
 
+    def extend_bounds(self, bounds):
+        """This will take an existing complex and extend the modules which are
+        present to be complete up to the given bounds
+
+        """
+        pass
+        
+    def extend_modules(self, length):
+        """This will pickup an existing complex of the given length and add
+        on the additional modules to the complex.
+
+        """
+        pass
+        
     def get_cplx(self):
+        """Get this to implement unpickling. check to see if there is a
+        pickled file? Or will that be too time consuming?
+
+        """
         if not self.module_flag:
             self.generate_modules()
         return self.cplx
@@ -498,6 +516,8 @@ class CobarComplex(object):
             dom._maps[bideg] = matrix 
             
     def make_maps(self):
+        if self.map_flg = True:
+            return
         for i in range(self.length):
             self.make_map(i)
         self.map_flag = True
@@ -592,18 +612,24 @@ class CobarComplex(object):
         elt.simplify()
         return elt
 
-##########
+    def pickle_cplx(self):
+        filename = "complex" + str(opts.prime) + \
+        "-" + str(opts.bounds) + "-" + str(self.length) + ".pickle"
+        str(self.length) +"-" + str(opts.bounds) + ".pickle"
+        pickle_file = open(filename, "wb")
+        pickle.dump(self.cplx, pickle_file, -1)
+        pickle_file.close()
 
-def pickle_cplx(cplx):
-    filename = "complex" + str(opts.prime) + "-" + str(opts.bounds) + ".pickle"
-    pickle_file = open(filename, "wb")
-    pickle.dump(cplx, pickle_file, -1)
-    pickle_file.close()
-
-def get_pickled_cplx():
-    filename = "complex" + str(opts.prime) + "-" + str(opts.bounds) + ".pickle"
-    pickle_File = open(filename, "rb")
-    cplx = pickle.load(pickle_file)
-    pickle_file.close()
-    return cplx
+    def get_pickled_cplx(self):
+        filename = "complex" + str(opts.prime) + \
+        "-" + str(opts.bounds) + "-" + str(self.length) + ".pickle"
+        try:
+            pickle_file = open(filename, "rb")
+            self.cplx = pickle.load(pickle_file)
+            pickle_file.close()
+            self.module_flag = True
+            self.map_flag = True
+        except IOError:
+            print "No pickled file"
+        
         

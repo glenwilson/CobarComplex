@@ -488,23 +488,26 @@ def vfe_test(x,f,n):
 
 def cohom_test(f):
     C = CobarComplex(f+2)
-    C.make_maps()
-    for bideg in C.get_cplx()[f]._dict.keys():
-        d = bideg[0]
-        w = bideg[1]
-        cohom = C.get_cohomology(f,d,w)
-        print "Filt, deg, wt", f, d, w
-        cc = cohom.get_cohomology()
-        print cc
-        if cc.get_basis():
-            for vect in cc.get_basis():
-                print C.element_from_vector(vect, f,d,w)
+    C.get_pickled_cplx()
+    #C.make_maps()
+    for i in range(1,f):
+        for bideg in C.get_cplx()[i]._dict.keys():
+            d = bideg[0]
+            w = bideg[1]
+            cohom = C.get_cohomology(i,d,w)
+            print "Filt, deg, wt", i, d, w
+            cc = cohom.get_cohomology()
+            print cc
+            if cc.get_basis():
+                for vect in cc.get_basis():
+                    print C.element_from_vector(vect, i,d,w)
+    C.pickle_cplx()
 
     
-opts.prime = 3
-opts.bounds = 14
+opts.prime = 7
+opts.bounds = 12
 #cplx_test(3)
-cohom_test(2)
+cohom_test(5)
 
 #C = CobarComplex(7)
 #C.make_map(1)
