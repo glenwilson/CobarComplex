@@ -23,7 +23,7 @@ class Monomial(object):
             else:
                 terms.append(("x", randint+1))
 
-        return Monomial( terms,  random.randrange(1,opts.get_prime()))
+        return Monomial( terms,  random.randrange(opts.get_prime()))
 
     @staticmethod
     def unit():
@@ -153,7 +153,7 @@ class Monomial(object):
         Returns the product
         """
         prodterms = self.get_terms() + other.get_terms()
-        prodcoeff = self.get_coeff() * other.get_coeff()
+        prodcoeff = (self.get_coeff() * other.get_coeff() % opts.prime)
         prod = Monomial(prodterms, prodcoeff)
         prod.simplify()
         return prod
@@ -185,7 +185,7 @@ class Monomial(object):
                                                 Monomial.unit()],
                                                self.get_coeff())])
         for term in self.get_terms():
-            out *= Monomial.term_coproduct(term)
+            out = out * Monomial.term_coproduct(term)
             out.simplify()
         out.simplify()
         return out
@@ -384,7 +384,8 @@ class TensorMonomial(object):
 
     def __mul__(self, other):
         newpair = [self.pair[0] * other.pair[0], self.pair[1] * other.pair[1] ]
-        newcoeff = (self.coeff * other.coeff) % opts.prime
+        sign_fix = self.pair[1].get_degree()[0] *other.pair[0].get_degree()[0] 
+        newcoeff = ((-1)**sign_fix * self.coeff * other.coeff) % opts.prime
         return TensorMonomial(newpair, newcoeff)
 
     def __eq__(self, other):
@@ -671,6 +672,7 @@ def all_indices():
                 break
     sort_out = sorted(out, key=lambda pair: \
                       tau_deg(pair[0]) + xi_deg(pair[1]))
+    #this needs to go back for reduced list
     sort_out.remove((xx, yy))
     return sort_out
 

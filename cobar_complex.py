@@ -101,21 +101,22 @@ class CobarMonomial(object):
                     return False
         return True
         
-    def __mul__(self, other):
-        if isinstance(other, CobarMonomial):
-            newcoeff = (self.coeff * other.coeff) %opts.prime
-            newfactors = self.factors + other.factors
-            return CobarMonomial(newfactors, len(newfactors), newcoeff)
-        elif isinstance(other, TensorMonomial):
-            newcoeff = (self.coeff * other.coeff) % opts.rime
-            newfactors = self.factors + other.tuple
-            return CobarMonomial(newfactors, len(newfactors), newcoeff)
-        elif isinstance(other, Monomial):
-            newfactors = self.factors[:]
-            newfactors.append(other)
-            return CobarMonomial(newfactors, len(newfactors), self.coeff)
-        else:
-            raise TypeError
+    # def __mul__(self, other):
+    #     ### THIS IS THE WRONG MUL! THIS IS CONCATENATION
+    #     if isinstance(other, CobarMonomial):
+    #         newcoeff = (self.coeff * other.coeff) %opts.prime
+    #         newfactors = self.factors + other.factors
+    #         return CobarMonomial(newfactors, len(newfactors), newcoeff)
+    #     elif isinstance(other, TensorMonomial):
+    #         newcoeff = (self.coeff * other.coeff) % opts.rime
+    #         newfactors = self.factors + other.tuple
+    #         return CobarMonomial(newfactors, len(newfactors), newcoeff)
+    #     elif isinstance(other, Monomial):
+    #         newfactors = self.factors[:]
+    #         newfactors.append(other)
+    #         return CobarMonomial(newfactors, len(newfactors), self.coeff)
+    #     else:
+    #         raise TypeError
 
     def __rmul__(self, n):
         newcoeff = (n * self.coeff) % opts.prime
@@ -161,15 +162,50 @@ class CobarMonomial(object):
     def _map(self):
         out = CobarPolynomial([])
         self.simplify()
+        print self
+        ###
+        out = out + (CobarMonomial.unit(1) & self)
+        print out
+        out = out + ((-1)**(self.filt+1) % opts.prime) * (self & CobarMonomial.unit(1))
+        print out
+        ###
+        
+        for i in range(self.filt):
+            mon = self.factors[i]
+            #change this to .reduced_coproduct() if you figure out
+            #correct deal for reduced thing!
+            coprod = mon.coproduct()
+#            print "mon", mon
+#            print "coprod", coprod
+            left = CobarMonomial(self.factors[:i], i, 1)
+            right = CobarMonomial(self.factors[i+1:], \
+                                  len(self.factors[i+1:]), 1)
+            out = out + self.coeff * (((-1)**(i+1) % opts.prime) \
+                         * ((left & coprod) & right))
+            print out
+        out.simplify()
+        return out
+
+    def _map_reduced(self):
+        out = CobarPolynomial([])
+        self.simplify()
         for i in range(self.filt):
             mon = self.factors[i]
             coprod = mon.reduced_coproduct()
             left = CobarMonomial(self.factors[:i], i, 1)
-            right = CobarMonomial(self.factors[i+1:], len(self.factors[i+1:]), 1)
-            out = out + (((-1)**(i+1) % opts.prime)* ((left & coprod) & right))
+            right = CobarMonomial(self.factors[i+1:], \
+                                  len(self.factors[i+1:]), 1)
+            out = out + (self.coeff * (((-1)**(i+1) % opts.prime )) * ((left & coprod) & right))
+            #for summand in out.summands:
+            #    coeff_fix = 1
+            #    for term in summand.factors[:i+1]:
+            #        coeff_fix *= (-1)**(mon.get_degree()[0]+1)
+            #    coeff_fix = coeff_fix % opts.prime
+            #    summand.coeff = summand.coeff * coeff_fix    
+            #print out
         out.simplify()
         return out
-            
+
         
             
 class CobarPolynomial(object):
@@ -260,12 +296,13 @@ class CobarPolynomial(object):
         return (deg, wt)
             
         
-    def __mul__(self, other):
-        newsummands = []
-        for mon1 in self.get_summands():
-            for mon2 in other.get_summands():
-                newsummands.append(mon1*mon2)
-        return CobarPolynomial(newsummands)
+    # def __mul__(self, other):
+    #     # THIS IS THE WRONG MUL!!!
+    #     newsummands = []
+    #     for mon1 in self.get_summands():
+    #         for mon2 in other.get_summands():
+    #             newsummands.append(mon1*mon2)
+    #     return CobarPolynomial(newsummands)
 
     def copy(self):
         return copy.deepcopy(self)
@@ -339,8 +376,8 @@ class CobarComplex(object):
     """
     This is a wrapper class
     """
-    def __init__(self):
-        self.length = opts.bounds
+    def __init__(self, length = opts.bounds):
+        self.length = length
         self.cplx = [CobarModule() for i in range(self.length + 1)]
         self.module_flag = False
         self.map_flag = False
@@ -357,19 +394,22 @@ class CobarComplex(object):
         #this sets up 0th module
         self.cplx[0]._dict[(0,0)] = [CobarMonomial([], 0, 1)]
         for f in range(self.length):
-            self.cplx[f+1]._dict[(0,0)] = []
+             self.cplx[f+1]._dict[(0,0)] = []
         #this will add all generators fo first module
         first = self.cplx[1]._dict
         Indices = all_indices()
+        #print Indices
         for pair in Indices:
             elt = CobarMonomial([Monomial.tau_xi_list(pair)], 1, 1)
             deg = elt.get_degree()
+            #print elt
+            #print deg
             try:
                 first[deg] += [elt]
             except KeyError:
                 first[deg] = [elt]
         # Now proceed to fill in remaining modules
-        for f in range(2,opts.bounds+1):
+        for f in range(2,self.length+1):
             prev = self.cplx[f-1]._dict
             curr = self.cplx[f]._dict
             # for each existing bidegree
@@ -445,10 +485,10 @@ class CobarComplex(object):
                 dom._maps[bideg] = ModMatrix.null(rows, cols)
                 continue
             for mon in dom_basis:
-                print "filtration", i, "at bidegree", bideg
-                print "mon", mon
-                value = mon._map()
-                print "val", value
+                #print "filtration", i, "at bidegree", bideg
+                #print "mon", mon
+                value = mon._map_reduced()
+                #print "val", value
                 vect = self.vector_from_element(value, i+1, bideg[0],
                                                 bideg[1])
                 #print "vector to append", vect
@@ -494,24 +534,24 @@ class CobarComplex(object):
             cplx[filt - 1]._dict[(deg, wt)] = []
             # We must now check dimensions of A_basis and B_basis
             # to account for 0 diml vspaces
-        print "Abasis", len(A_basis)
-        print "Bbasis", len(B_basis)
+#        print "Abasis", len(A_basis)
+#        print "Bbasis", len(B_basis)
         if len(B_basis) == 0:
             #this means cohom is 0 diml
             #resulting cohom object will not match up with vect/elt
             #translation
-            print "B basis null"
+            #print "B basis null"
             A = ModMatrix.null(1,1)
             B = ModMatrix.identity(1)
         elif not B.row_count:
-            print "B has no rows"
+            #print "B has no rows"
             B = ModMatrix.null(1, len(B_basis))
         cohom = Cohomology(B, A)
-        print "bideg key error", filt, deg, wt
-        print "filt - 1",  cplx[filt - 1]._dict.keys()
-        print "filt", cplx[filt]._dict.keys()
-        print "filt - 1 ", cplx[filt - 1]._maps.keys()
-        print "filt", cplx[filt]._maps.keys()
+#        print "bideg key error", filt, deg, wt
+#        print "filt - 1",  cplx[filt - 1]._dict.keys()
+#        print "filt", cplx[filt]._dict.keys()
+#        print "filt - 1 ", cplx[filt - 1]._maps.keys()
+#        print "filt", cplx[filt]._maps.keys()
         return cohom
 
     def vector_from_element(self, elt, filt, deg, wt):
@@ -549,6 +589,7 @@ class CobarComplex(object):
             raise TypeError("This vector doesn't seem to belong here")
         for i in range(len(basis)):
             elt = elt + ( vector[i] * basis[i])
+        elt.simplify()
         return elt
 
 ##########

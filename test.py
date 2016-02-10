@@ -7,7 +7,7 @@ from cobar_complex import CobarMonomial, CobarPolynomial, CobarModule, CobarComp
 import random
 
 #opts.prime = 3
-opts.prime = 5
+opts.prime = 3
 #opts.prime = 13
 #opts.prime = 541
 
@@ -428,27 +428,27 @@ def cobar_concat(x,y,f,n):
 # print all_indices()
 # print [tau_deg(p[0]) + xi_deg(p[1]) for p in all_indices()]
 
-def cplx_test():
-    C = CobarComplex()
+def cplx_test(length):
+    C = CobarComplex(length)
     C.generate_modules()
-    for i in range(opts.bounds):
+    for i in range(C.length):
         print "module", i
         for deg in C.cplx[i]._dict:
             print "deg", deg
             for thing in C.cplx[i]._dict[deg]:
                 print thing
 
-#opts.prime = 7
-#opts.bounds = 20
-#cplx_test()
+#opts.prime = 3
+#opts.bounds = 12
+#cplx_test(7)
 
 def map_test(f,x,n):
     for i in range(n):
         xx = CobarMonomial.random(x,f)
         print xx
-        print xx._map()
+        print xx._map_reduced()
 
-#map_test(3,1,1)
+#map_test(1,1,1)
 
 def summand_test(x,y,f,n):
     for i in range(n):
@@ -463,7 +463,7 @@ def summand_test(x,y,f,n):
 #summand_test(2,5,2,500)
 
 def vfe_test(x,f,n):
-    C= CobarComplex()
+    C= CobarComplex(7)
     print "calculating complex"
     cplx = C.get_cplx()
     for i in range(n):
@@ -487,7 +487,7 @@ def vfe_test(x,f,n):
 #vfe_test(1,1,10)
 
 def cohom_test(f):
-    C = CobarComplex()
+    C = CobarComplex(f+2)
     C.make_maps()
     for bideg in C.get_cplx()[f]._dict.keys():
         d = bideg[0]
@@ -501,18 +501,11 @@ def cohom_test(f):
                 print C.element_from_vector(vect, f,d,w)
 
     
-opts.prime = 5
-opts.bounds = 12
-#xx = Monomial.tau_list([1,1])
-#print xx
-#yy = CobarMonomial([xx], 1, 1)
-#print yy
-#print yy._map()
-#print xx.coproduct()
-#print Monomial.tau_list([1]).coproduct()
-#print Monomial.tau_list([0,1]).coproduct()
-#cohom_test(1)
+opts.prime = 3
+opts.bounds = 14
+#cplx_test(3)
 cohom_test(2)
-#C = CobarComplex()
+
+#C = CobarComplex(7)
 #C.make_map(1)
 #C.make_map(2)
