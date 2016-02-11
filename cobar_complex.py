@@ -402,8 +402,6 @@ class CobarComplex(object):
         for pair in Indices:
             elt = CobarMonomial([Monomial.tau_xi_list(pair)], 1, 1)
             deg = elt.get_degree()
-            #print elt
-            #print deg
             try:
                 first[deg] += [elt]
             except KeyError:
@@ -480,6 +478,9 @@ class CobarComplex(object):
         this needs a map defined on CobarMonomial objects
 
         does this handle 0 dim vector spaces? 
+
+        this is a huge timesink. try to do multiprocessing,
+        check methods for too much simplification
         """
         #print "in make map", i
         dom = self.get_cplx()[i]
@@ -518,7 +519,8 @@ class CobarComplex(object):
                 #print "vector to append", vect
                 out.append(vect)
             matrix = ModMatrix(out).get_transpose()
-            #print matrix
+            print "i, bideg", i, bideg
+            print matrix
             dom._maps[bideg] = matrix 
             
     def make_maps(self):
