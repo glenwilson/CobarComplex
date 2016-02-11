@@ -32,6 +32,7 @@ class CobarMonomial(object):
         if len(self.factors) != self.filt:
             raise TypeError
         self.coeff = coeff
+        self.simplify_flag = False
 
     def get_coeff(self):
         return self.coeff
@@ -62,6 +63,8 @@ class CobarMonomial(object):
         """Warning! Mutatior!
 
         """
+        if self.simplify_flag:
+            return
         for mon in self.factors:
             mon.simplify()
         newcoeff = self.coeff
@@ -71,6 +74,7 @@ class CobarMonomial(object):
         self.coeff = newcoeff
         if not self.coeff:
             self.factors = CobarMonomial.null(self.filt).factors
+        self.simplify_flag = True
 
     def __eq__(self, other):
         """
@@ -134,17 +138,23 @@ class CobarMonomial(object):
         if isinstance(other, CobarMonomial):
             out = self.factors + other.factors
             newcoeff = (self.coeff * other.coeff) % opts.prime
-            return CobarMonomial(out, len(out), newcoeff)
+            result = CobarMonomial(out, len(out), newcoeff)
+            result.simplify()
+            return result
         elif isinstance(other, CobarPolynomial) \
              or isinstance(other, TensorPolynomial):
             newsummands = []
             for mon2 in other.get_summands():
                 newsummands.append(self & mon2)
-            return CobarPolynomial(newsummands)
+            result = CobarPolynomial(newsummands)
+            result.simplify()
+            return result
         elif isinstance(other, TensorMonomial):
             out = self.factors + other.pair
             newcoeff = (self.coeff * other.coeff) % opts.prime
-            return CobarMonomial(out, len(out), newcoeff)
+            result = CobarMonomial(out, len(out), newcoeff)
+            result.simplify()
+            return result
         else:
             print "self", self, type(self), self.factors
             print "other", other, type(other)
@@ -234,6 +244,7 @@ class CobarPolynomial(object):
             for term in summands:
                 if term.filt != self.filt:
                     print "not homogeneous!"
+        self.simplify_flag = False
 
     def get_summands(self):
         return self.summands
@@ -262,6 +273,8 @@ class CobarPolynomial(object):
                 self.summands.remove(mon)
 
     def simplify(self):
+        if self.simplify_flag:
+            return
         self.stupid_simplify()
         stack = self.get_summands()[:]
         #this simplify may be unnecessary
@@ -280,6 +293,7 @@ class CobarPolynomial(object):
                 outsum.append(CobarMonomial(mon.get_factors(),
                                             mon.filt, coefficient))
         self.summands = outsum
+        self.simplify_flag = True
 
     def get_degree(self):
         self.simplify()
@@ -312,6 +326,7 @@ class CobarPolynomial(object):
         out = self.copy()
         for mon in out.summands:
             mon.coeff = (n * mon.coeff) % opts.prime
+        out.simplify()
         return out
             
     def __and__(self, other):
@@ -326,13 +341,17 @@ class CobarPolynomial(object):
             for mon1 in self.get_summands():
                 for mon2 in other.get_summands():
                     newsummands.append(mon1 & mon2)
-            return CobarPolynomial(newsummands)
+            result = CobarPolynomial(newsummands)
+            result.simplify()
+            return result
         elif isinstance(other, CobarMonomial) \
              or isinstance(other, TensorMonomial):
             newsummands = []
             for mon1 in self.get_summands():
                 newsummands.append(mon1 & other)
-            return CobarPolynomial(newsummands)
+            result = CobarPolynomial(newsummands)
+            result.simplify()
+            return result
 
     def is_summand(self, monomial):
         """checks if the monomial appears in the polynomial with non-zero

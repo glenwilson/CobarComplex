@@ -81,14 +81,17 @@ class Monomial(object):
     def __init__(self, terms, coeff):
         self.terms = terms
         self.coeff = coeff
+        self.simplify_flag = False
 
     def __getstate__(self):
         return {'terms' : self.terms,
-                'coeff' : self.coeff}
+                'coeff' : self.coeff,
+                'simplify_flag' : self.simplify_flag}
         
     def __setstate__(self, _dict):
         self.terms = _dict['terms']
         self.coeff = _dict['coeff']
+        self.simplify_flag = _dict['simplify_flag']
 
     def get_terms(self):
         return self.terms
@@ -129,6 +132,11 @@ class Monomial(object):
         """
         Warning! Mutator!
         """
+        try:
+            if self.simplify_flag:
+                return
+        except AttributeError:
+            print self
         newterms = sorted([ term for term in self.terms if term[0] == "x" and term[1] > 0], key=lambda term: term[1])
         tauindices = [ term[1] for term in self.terms if term[0] == "t"]
         newcoeff = self.coeff
@@ -146,6 +154,7 @@ class Monomial(object):
                 self.coeff = -self.coeff
             newterms += [("t", x) for x in tausorted]
             self.terms = newterms
+        self.simplify_flag = True
 
     def __mul__(self,other):
         """
@@ -162,6 +171,7 @@ class Monomial(object):
         out = Monomial([],1)
         for i in xrange(num):
             out = out * self
+        out.simplify()
         return out
     
     def __eq__(self, other):
@@ -169,13 +179,11 @@ class Monomial(object):
         This should maybe mutate monomials to simplified form?
         Currently uses costly copies
         """
-        selfcopy = self.copy()
-        othercopy = other.copy()
-        selfcopy.simplify()
-        othercopy.simplify()
-        if selfcopy.coeff != othercopy.coeff:
+        self.simplify()
+        other.simplify()
+        if self.coeff != other.coeff:
             return False
-        if selfcopy.terms != othercopy.terms:
+        if self.terms != other.terms:
             return False
         return True
 
@@ -339,6 +347,7 @@ class TensorMonomial(object):
     def __init__(self, pair, coeff):
         self.pair  = pair
         self.coeff = coeff
+        self.simplify_flag = False
 
     def __getstate__(self):
         return {'pair' : self.pair, 'coeff' : self.coeff}
@@ -372,6 +381,8 @@ class TensorMonomial(object):
         """
         Warning! Mutator!
         """
+        if self.simplify_flag:
+            return
         self.pair[0].simplify()
         self.pair[1].simplify()
         newcoeff = (self.pair[0].coeff * self.pair[1].coeff * self.coeff) % opts.prime
@@ -381,12 +392,15 @@ class TensorMonomial(object):
         if not self.coeff:
             self.pair[0] = Monomial([],1)
             self.pair[1] = Monomial([],1)
+        self.simplify_flag = True
 
     def __mul__(self, other):
         newpair = [self.pair[0] * other.pair[0], self.pair[1] * other.pair[1] ]
         sign_fix = self.pair[1].get_degree()[0] *other.pair[0].get_degree()[0] 
         newcoeff = ((-1)**sign_fix * self.coeff * other.coeff) % opts.prime
-        return TensorMonomial(newpair, newcoeff)
+        out = TensorMonomial(newpair, newcoeff)
+        out.simplify()
+        return out
 
     def __eq__(self, other):
         """
@@ -446,6 +460,7 @@ class TensorPolynomial(object):
     
     def __init__(self, summands):
         self.summands = summands
+        self.simplify_flag = False
 
     def __getstate__(self):
         return { 'summands' : self.summands}
@@ -464,6 +479,8 @@ class TensorPolynomial(object):
                 self.summands.remove(mon)
 
     def simplify(self):
+        if self.simplify_flag:
+            return
         self.stupid_simplify()
         stack = self.get_summands()[:]
         #this simplify may be unnecessary
@@ -482,6 +499,7 @@ class TensorPolynomial(object):
                 outsum.append(TensorMonomial(mon.get_pair(), \
                                              coefficient))
         self.summands = outsum
+        self.simplify_flag = True
 
     def __str__(self):
         string = ""
