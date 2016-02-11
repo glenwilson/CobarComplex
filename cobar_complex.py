@@ -384,7 +384,7 @@ class CobarComplex(object):
 
     def generate_modules(self):
         """
-        This will produce the first opts.bounds +1 modules 
+        This will produce the first self.length + 1 modules 
         in the cobar complex
 
         check to make sure only simplified monomials appear in basis!
@@ -398,7 +398,6 @@ class CobarComplex(object):
         #this will add all generators fo first module
         first = self.cplx[1]._dict
         Indices = all_indices()
-        #print Indices
         for pair in Indices:
             elt = CobarMonomial([Monomial.tau_xi_list(pair)], 1, 1)
             deg = elt.get_degree()
@@ -408,35 +407,67 @@ class CobarComplex(object):
                 first[deg] = [elt]
         # Now proceed to fill in remaining modules
         for f in range(2,self.length+1):
-            prev = self.cplx[f-1]._dict
-            curr = self.cplx[f]._dict
-            # for each existing bidegree
-            for bideg in prev.keys():
-                #try to insert a monomial 
-                for pair in Indices:
-                    deg = bideg[0] + tau_deg(pair[0]) + xi_deg(pair[1])
-                    wt = bideg[1] + tau_wt(pair[0]) + xi_wt(pair[1])
-                    # check degree works
-                    if deg <= opts.bounds:
-                        try:
-                            curr[(deg, wt)]
-                        except KeyError:
-                            curr[(deg, wt)] = []
-                        #if it does, insert
-                        for monomial in prev[bideg]:
-                            for k in range(f):
-                                elt = monomial.insert(k, Monomial.tau_xi_list(pair))
-                                flag = False
-                                for other in curr[(deg, wt)]:
-                                    if other == elt:
-                                        flag = True
-                                        break
-                                if not flag:
-                                    curr[(deg, wt)] += [elt]
-                    else:
-                        break
+            self.make_next_module(f)
+            # prev = self.cplx[f-1]._dict
+            # curr = self.cplx[f]._dict
+            # # for each existing bidegree
+            # for bideg in prev.keys():
+            #     #try to insert a monomial 
+            #     for pair in Indices:
+            #         deg = bideg[0] + tau_deg(pair[0]) + xi_deg(pair[1])
+            #         wt = bideg[1] + tau_wt(pair[0]) + xi_wt(pair[1])
+            #         # check degree works
+            #         if deg <= opts.bounds:
+            #             try:
+            #                 curr[(deg, wt)]
+            #             except KeyError:
+            #                 curr[(deg, wt)] = []
+            #             #if it does, insert
+            #             for monomial in prev[bideg]:
+            #                 for k in range(f):
+            #                     elt = monomial.insert(k, Monomial.tau_xi_list(pair))
+            #                     flag = False
+            #                     for other in curr[(deg, wt)]:
+            #                         if other == elt:
+            #                             flag = True
+            #                             break
+            #                     if not flag:
+            #                         curr[(deg, wt)] += [elt]
+            #         else:
+            #             break
         self.module_flag = True
 
+    def make_next_module(self, f):
+        Indices = all_indices()
+        prev = self.cplx[f-1]._dict
+        curr = self.cplx[f]._dict
+        # for each existing bidegree
+        for bideg in prev.keys():
+            #try to insert a monomial 
+            for pair in Indices:
+                deg = bideg[0] + tau_deg(pair[0]) + xi_deg(pair[1])
+                wt = bideg[1] + tau_wt(pair[0]) + xi_wt(pair[1])
+                # check degree works
+                if deg <= opts.bounds:
+                    try:
+                        curr[(deg, wt)]
+                    except KeyError:
+                        curr[(deg, wt)] = []
+                    #if it does, insert
+                    for monomial in prev[bideg]:
+                        for k in range(f):
+                            elt = monomial.insert(k, Monomial.tau_xi_list(pair))
+                            flag = False
+                            for other in curr[(deg, wt)]:
+                                if other == elt:
+                                    flag = True
+                                    break
+                            if not flag:
+                                curr[(deg, wt)] += [elt]
+                else:
+                    break
+
+        
     def extend_bounds(self, bounds):
         """This will take an existing complex and extend the modules which are
         present to be complete up to the given bounds
@@ -444,13 +475,32 @@ class CobarComplex(object):
         """
         pass
         
-    def extend_modules(self, length):
+    def extend_complex(self, length):
         """This will pickup an existing complex of the given length and add
         on the additional modules to the complex.
 
         """
-        pass
+        if not self.module_flag or not self.map_flag:
+            self.length = length
+            self.generate_modules()
+            self.make_maps()
+            return
+        old_length = self.length
+        self.length = length
+        if old_length >= self.length:
+            return
+        # Add in empty modules to self.cplx
+        for f in range(old_length + 1, self.length +1):
+            self.cplx.append(CobarModule())
+        for f in range(self.length+1):
+            if not self.cplx[f]._dict.keys():
+                self.make_next_module(f)
+        for f in range(self.length):
+            if not self.cplx[f]._maps.keys():
+                self.make_map(f)
+        self.module_flag = True
 
+        
     def product_structure(self):
         pass
 

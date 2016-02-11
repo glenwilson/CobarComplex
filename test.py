@@ -504,10 +504,16 @@ def cohom_test(f):
     C.pickle_cplx()
 
     
-opts.prime = 7
-opts.bounds = 45
+opts.prime = 3
+opts.bounds = 20
 #cplx_test(3)
-cohom_test(4)
+#cohom_test(1)
+
+C = CobarComplex(3)
+C.get_pickled_cplx()
+C.extend_complex(4)
+C.pickle_cplx()
+#cohom_test(1)
 
 #C = CobarComplex(7)
 #C.make_map(1)
