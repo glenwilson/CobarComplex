@@ -555,6 +555,8 @@ class CobarComplex(object):
                             if not any(other == elt for other in
                                        curr[(deg, wt)]):
                                 curr[(deg, wt)].append(elt)
+                            else:
+                                print "duplicate", elt
                 else:
                     break
 
@@ -658,6 +660,8 @@ class CobarComplex(object):
                 # append elt with cohom coeff 1
                 if not any(x == elt for x in newmodule[bideg]):
                     newmodule[bideg].append(elt.copy())
+                else:
+                    print "duplicate", elt
                 for i in range(bideg[1]/opts.ind):
                     # append elt with zeta multiple
                     newelt = elt.copy()
@@ -667,6 +671,8 @@ class CobarComplex(object):
                         newmodule[newbideg] = []
                     if not any(x == newelt for x in newmodule[newbideg]):
                         newmodule[newbideg].append(newelt)
+                    else:
+                        print "duplicate", newelt
                     # now a gamma zeta multiple
                     newelt = elt.copy()
                     newelt.cohom = [1,i]
@@ -675,6 +681,8 @@ class CobarComplex(object):
                         newmodule[newbideg] = []
                     if not any(x == newelt for x in newmodule[newbideg]):
                         newmodule[newbideg].append(newelt)
+                    else:
+                        print "duplicate", newelt
     
     def make_map_cohom(self, i):
         """
