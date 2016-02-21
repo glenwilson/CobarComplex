@@ -711,7 +711,7 @@ class CobarComplex(object):
                                                 bideg[1])
                 out.append(vect)
             matrix = ModMatrix(out).get_transpose()
-            print " Made matrix: i, bideg", i, bideg
+            print " Made matrix: i, bideg, size", i, bideg, matrix.get_size()
             dom._maps[bideg] = matrix 
 
         

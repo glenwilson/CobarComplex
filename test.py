@@ -581,19 +581,9 @@ def cohom_cohom_test(f):
 opts.prime = 3
 opts.ind = 2
 opts.bounds = 10
-# C = CobarComplex(4)
-# C.get_pickled_cplx()
-# C.extend_complex_cohom(5)
-# C.get_maps_cohom()
-# C.pickle_cplx()
-#cohom_cohom_test(3)
-
 #C = CobarComplex(4)
 #C.get_pickled_cplx()
-#C.extend_complex(5)
+#C.extend_complex_cohom(5)
+#C.get_maps_cohom()
 #C.pickle_cplx()
-#cohom_test(5)
-
-#C = CobarComplex(7)
-#C.make_map(1)
-#C.make_map(2)
+cohom_cohom_test(3)
