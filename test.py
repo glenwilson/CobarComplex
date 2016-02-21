@@ -481,6 +481,23 @@ def cplx_test(length):
 #opts.bounds = 20
 #cplx_test(7)
 
+def cplx_cohom_test(length):
+    C = CobarComplex(length)
+    C.generate_modules_cohom()
+    for i in range(C.length):
+        print "module", i
+        keys = C.cplx_cohom[i]._dict.keys()
+        keys = sorted(keys)
+        for deg in keys:
+            print "deg", deg
+            for thing in C.cplx_cohom[i]._dict[deg]:
+                print thing
+
+#opts.prime = 3
+#opts.ind = 2
+#opts.bounds = 10
+#cplx_cohom_test(3)
+    
 def map_test(f,x,n):
     for i in range(n):
         xx = CobarMonomial.random(x,f)
@@ -533,7 +550,7 @@ def cohom_test(f):
         for bideg in keys:
             d = bideg[0]
             w = bideg[1]
-            cohom = C.get_cohomology(i,d,w)
+            cohom = C.get_cohomology(i,d,w, False)
             print "Filt, deg, wt", i, d, w
             cc = cohom.get_cohomology()
             print cc
@@ -542,12 +559,30 @@ def cohom_test(f):
                     print C.element_from_vector(vect, i,d,w)
     C.pickle_cplx()
 
-    
-opts.prime = 5
-opts.ind = 1
-opts.bounds = 26
-#cplx_test(5)
-cohom_test(3)
+def cohom_cohom_test(f):
+    C = CobarComplex(f+2)
+    C.get_pickled_cplx()
+    #C.make_maps()
+    for i in range(1,f+1):
+        keys = C.get_cplx_cohom()[i]._dict.keys()
+        keys = sorted(keys)
+        for bideg in keys:
+            d = bideg[0]
+            w = bideg[1]
+            cohom = C.get_cohomology(i,d,w, True)
+            print "Filt, deg, wt", i, d, w
+            cc = cohom.get_cohomology()
+            print cc
+            if cc.get_basis():
+                for vect in cc.get_basis():
+                    print C.element_from_vector_cohom(vect, i,d,w)
+    C.pickle_cplx()
+
+opts.prime = 3
+opts.ind = 2
+opts.bounds = 20
+#cplx_test(3)
+cohom_cohom_test(3)
 
 #C = CobarComplex(4)
 #C.get_pickled_cplx()

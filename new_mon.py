@@ -141,7 +141,11 @@ class Monomial(object):
         return (deg, wt)
 
     def copy(self):
-        return copy.deepcopy(self)
+        newtaus = self.taus[:]
+        newxis = self.xis[:]
+        newcohom = self.cohom[:]
+        newcoeff = self.coeff
+        return Monomial(newtaus, newxis, newcohom, newcoeff)
                 
     def __str__(self):
         mystr = ""
@@ -415,11 +419,9 @@ class Polynomial(object):
         """
         if self.simplify_flag:
             return
+        print "poly simplify"
         self.stupid_simplify()
         stack = self.get_summands()[:]
-        # might need case to rule out 0
-        #for mon in stack:
-        #    mon.simplify()
         outsum = []
         while stack:
             mon = stack.pop()
@@ -437,7 +439,8 @@ class Polynomial(object):
         self.simplify_flag = True
 
     def copy(self):
-        return copy.deepcopy(self)
+        return Polynomial([mon.copy() for mon in self.summands])
+
         
     def __eq__(self, other):
         """
@@ -542,7 +545,10 @@ objects should not have any terms from mot. coh., i.e., cohom = [0,0].
         return out
 
     def copy(self):
-        return copy.deepcopy(self)
+        newpair = [mon.copy() for mon in self.pair]
+        newcohom = self.cohom[:]
+        newcoeff = self.coeff
+        return TensorMonomial(newpair, newcohom, newcoeff)
     
     def simplify(self):
         """This will become more complicated. Will need to return a tensor
@@ -649,6 +655,9 @@ class TensorPolynomial(object):
     def __setstate__(self, _dict):
         self.summands = _dict['summands']
 
+    def copy(self):
+        return TensorPolynomial([mon.copy() for mon in self.summands])
+        
     def get_summands(self):
         return self.summands
 
