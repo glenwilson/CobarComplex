@@ -145,7 +145,9 @@ class Monomial(object):
         newxis = self.xis[:]
         newcohom = self.cohom[:]
         newcoeff = self.coeff
-        return Monomial(newtaus, newxis, newcohom, newcoeff)
+        out = Monomial(newtaus, newxis, newcohom, newcoeff)
+        out.simplify_flag = self.simplify_flag
+        return out
                 
     def __str__(self):
         mystr = ""
@@ -439,7 +441,9 @@ class Polynomial(object):
         self.simplify_flag = True
 
     def copy(self):
-        return Polynomial([mon.copy() for mon in self.summands])
+        out = Polynomial([mon.copy() for mon in self.summands])
+        out.simplify_flag = self.simplify_flag
+        return out
 
         
     def __eq__(self, other):
@@ -548,7 +552,9 @@ objects should not have any terms from mot. coh., i.e., cohom = [0,0].
         newpair = [mon.copy() for mon in self.pair]
         newcohom = self.cohom[:]
         newcoeff = self.coeff
-        return TensorMonomial(newpair, newcohom, newcoeff)
+        out = TensorMonomial(newpair, newcohom, newcoeff)
+        out.simplify_flag = self.simplify_flag
+        return out
     
     def simplify(self):
         """This will become more complicated. Will need to return a tensor
@@ -656,7 +662,9 @@ class TensorPolynomial(object):
         self.summands = _dict['summands']
 
     def copy(self):
-        return TensorPolynomial([mon.copy() for mon in self.summands])
+        out = TensorPolynomial([mon.copy() for mon in self.summands])
+        out.simplify_flag = self.simplify_flag 
+        return out
         
     def get_summands(self):
         return self.summands

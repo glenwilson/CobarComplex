@@ -41,7 +41,9 @@ class CobarMonomial(object):
         newfilt = self.filt
         newcohom = self.cohom[:]
         newcoeff = self.coeff
-        return CobarMonomial(newfactors, newfilt, newcohom, newcoeff)
+        out = CobarMonomial(newfactors, newfilt, newcohom, newcoeff)
+        out.simplify_flag = self.simplify_flag
+        return out
         
     def get_coeff(self):
         return self.coeff
@@ -367,7 +369,9 @@ class CobarPolynomial(object):
     #     return CobarPolynomial(newsummands)
 
     def copy(self):
-        return CobarPolynomial([mon.copy() for mon in self.summands])
+        out = CobarPolynomial([mon.copy() for mon in self.summands])
+        out.simplify_flag = self.simplify_flag 
+        return out
 
     
     def __rmul__(self, n):
@@ -529,6 +533,7 @@ class CobarComplex(object):
 
         This only mutates self.cplx
         """
+        print "making module f", f
         Indices = all_indices()
         prev = self.cplx[f-1]._dict
         curr = self.cplx[f]._dict
