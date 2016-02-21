@@ -1,14 +1,16 @@
 from options import opts
 #from dual_st_alg import Monomial, Polynomial, opts, TensorMonomial, TensorPolynomial
-from dual_st_alg import *
+from new_mon import *
 from mod_lin_alg import ModVector, ModMatrix
 from cohomology import Cohomology
-from cobar_complex import CobarMonomial, CobarPolynomial, CobarModule, CobarComplex
+#from cobar_complex import CobarMonomial, CobarPolynomial, CobarModule, CobarComplex
+from new_cobar_complex import *
 import random
 
 #opts.prime = 3
-opts.prime = 3
-#opts.prime = 13
+#opts.prime = 3
+#opts.prime = 11
+#opts.ind = 5
 #opts.prime = 541
 
 def simplify_test(length, n):
@@ -32,31 +34,58 @@ def product_test(length, n):
         yy = Monomial.random(length)
         zz = xx*yy
         tt = yy*xx
-        xx.simplify()
-        yy.simplify()
         print xx
         print yy
         print zz
         print tt
         print "\n"
 
-#product_test(4, 10)
-
+#product_test(1, 10)
+# xx = Monomial.tau_list([1])
+# yy = Monomial.tau_list([0,1])
+# zz = Monomial.cohom_list([1,0])
+# print "x", xx
+# print "y", yy
+# print "z", zz
+# print "xyz", xx*yy*zz
+# print "zxy", zz*xx*yy
+# print "zyx", zz*yy*xx
+# print "xzy", xx*zz*yy
+# print "yzx", yy*zz*xx
 
 def equality_test(length, n):
     for i in range(n):
         xx = Monomial.random(length)
         yy = Monomial.random(length)
         print xx, yy, xx==yy
+    xx = Monomial.null()
+    yy = Monomial([1,0,1],[1,1,1,1],[0,0],0)
+    print xx, yy, xx == yy
 
-#equality_test(2, 100)
+# opts.prime = 541
+# opts.ind = 1
+#equality_test(1, 10000)
 
 def degree_test(length, n):
     for i in range(n):
         xx = Monomial.random(length)
         print xx
         print xx.get_degree()
-
+    for i in range(n):
+        xx = Monomial.term(("t", i))
+        print xx
+        print xx.get_degree()
+    for i in range(n):
+        xx = Monomial.term(("x", i+1))
+        print xx
+        print xx.get_degree()
+    xx = Monomial.cohom_list([1,0])
+    print xx
+    print xx.get_degree()
+    xx = Monomial.cohom_list([0,1])
+    print xx
+    print xx.get_degree()
+        
 #print opts.prime
 #degree_test(2,10)
 
@@ -76,7 +105,7 @@ def poly_simplify_test(x,y,n):
         print str(xx) + "\n"
 
 #print opts.prime
-#poly_simplify_test(4,2,10)
+#poly_simplify_test(4,1,10)
 
 def poly_simplify_test(x,y,n):
     for i in range(n):
@@ -86,7 +115,9 @@ def poly_simplify_test(x,y,n):
         yy.simplify()
         print str(yy) + "\n"
 
-#poly_simplify_test(2,3,20)
+#opts.prime = 7
+#opts.ind = 3
+#poly_simplify_test(1,2,20)
 
 def poly_test_eq(x,y,n):
     for i in range(n):
@@ -94,18 +125,18 @@ def poly_test_eq(x,y,n):
         yy = Polynomial.random(x,y)
         print xx, "...", yy, "...",  xx==yy
 
-#poly_test_eq(2,2,1000)
+#poly_test_eq(2,1,1000)
 
-def tensmon_simplify(x,y,n):
+def tensmon_simplify(x,n):
     for i in range(n):
-        xx = Monomial.random(x)
-        yy = Monomial.random(y)
-        zz = TensorMonomial([xx,yy], random.randrange(opts.prime))
+        zz = TensorMonomial.random(x)
         print zz
         zz.simplify()
         print zz
 
-#tensmon_simplify(3,3,100)
+#opts.prime = 7
+#opts.ind = 3
+#tensmon_simplify(2,1)
 
 def tenspoly_str(x,y,n):
     for i in range(n):
@@ -119,21 +150,19 @@ def tenspoly_sum(x,y,n):
         xx = TensorPolynomial.random(x,y)
         yy = TensorPolynomial.random(x,y)
         zz = xx + yy
+        zz.simplify()
         print xx
         print yy
         print str(zz) + "\n"
 
-#tenspoly_sum(3,3,10)
+#tenspoly_sum(1,1,10)
 
 def tensmon_eq(x,n):
     for i in range(n):
         xx = TensorMonomial.random(x)
-        print xx
         yy =TensorMonomial.random(x)
-        print yy
-        print xx == yy 
+        print xx, "...", yy, "...",  xx == yy 
 
-        
 #tensmon_eq(3,100)
 
 def tenspoly_simplify(x,y,n):
@@ -141,16 +170,14 @@ def tenspoly_simplify(x,y,n):
         xx = TensorPolynomial.random(x,y)
         print xx
         xx.simplify()
-        print xx
+        print xx, "\n"
 
-#tenspoly_simplify(3,3,100)
+#tenspoly_simplify(2,1,100)
 
 def tenspoly_add(x,y,n):
     for i in range(n):
         xx = TensorPolynomial.random(x,y)
         yy = TensorPolynomial.random(x,y)
-        print xx
-        print yy
         print xx + yy + xx
         zz = xx + yy + xx
         zz.simplify()
@@ -162,13 +189,15 @@ def tenspoly_mult(x,y,n):
     for i in range(n):
         xx = TensorPolynomial.random(x,y)
         yy = TensorPolynomial.random(x,y)
-        print xx
-        print yy
+        xx.simplify()
+        yy.simplify()
+        print xx, "  *  ", yy 
         zz = xx * yy
         zz.simplify()
         print zz, "\n"
 
-#tenspoly_mult(3,3,100)
+#opts.prime = 541
+#tenspoly_mult(2,1,100)
 
 def coprod_term(n):
     for i in range(1,n):
@@ -183,8 +212,14 @@ def coprod_test(x,n):
         xx = Monomial.random(x)
         print xx
         print xx.coproduct(), "\n"
-    
-#coprod_test(2, 5)
+    xx = Monomial.tau_list([1,1])
+    print xx
+    print xx.coproduct(), "\n"
+    xx = Monomial.xi_list([2])
+    print xx
+    print xx.coproduct(), "\n"
+
+#coprod_test(1, 1)
 
 def reduced_coprod_test(x,n):
     for i in range(n):
@@ -367,6 +402,7 @@ def cohom_test(x,y,z,n):
 
 #cohom_test(0,0,0,2)
 
+####################################################################
 
 def cobar_mon(x,f,n):
     for i in range(n):
@@ -433,20 +469,23 @@ def cplx_test(length):
     C.generate_modules()
     for i in range(C.length):
         print "module", i
-        for deg in C.cplx[i]._dict:
+        keys = C.cplx[i]._dict.keys()
+        keys = sorted(keys)
+        for deg in keys:
             print "deg", deg
             for thing in C.cplx[i]._dict[deg]:
                 print thing
 
-#opts.prime = 3
-#opts.bounds = 12
+#opts.prime = 11
+#opts.ind = 5
+#opts.bounds = 20
 #cplx_test(7)
 
 def map_test(f,x,n):
     for i in range(n):
         xx = CobarMonomial.random(x,f)
         print xx
-        print xx._map_reduced()
+        print xx._map()
 
 #map_test(1,1,1)
 
@@ -456,11 +495,9 @@ def summand_test(x,y,f,n):
         yy = CobarPolynomial.random(x,y,f)
         xx.simplify()
         yy.simplify()
-        print xx
-        print yy
-        print yy.is_summand(xx), "\n"
+        print xx, "...",  yy, yy.is_summand(xx), "\n"
 
-#summand_test(2,5,2,500)
+#summand_test(1,5,1,5000)
 
 def vfe_test(x,f,n):
     C= CobarComplex(7)
@@ -491,7 +528,9 @@ def cohom_test(f):
     C.get_pickled_cplx()
     #C.make_maps()
     for i in range(1,f+1):
-        for bideg in C.get_cplx()[i]._dict.keys():
+        keys = C.get_cplx()[i]._dict.keys()
+        keys = sorted(keys)
+        for bideg in keys:
             d = bideg[0]
             w = bideg[1]
             cohom = C.get_cohomology(i,d,w)
@@ -504,16 +543,17 @@ def cohom_test(f):
     C.pickle_cplx()
 
     
-opts.prime = 3
-opts.bounds = 25
-#cplx_test(3)
-#cohom_test(1)
+opts.prime = 5
+opts.ind = 1
+opts.bounds = 26
+#cplx_test(5)
+cohom_test(3)
 
 #C = CobarComplex(4)
 #C.get_pickled_cplx()
 #C.extend_complex(5)
 #C.pickle_cplx()
-cohom_test(5)
+#cohom_test(5)
 
 #C = CobarComplex(7)
 #C.make_map(1)

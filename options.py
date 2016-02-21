@@ -2,12 +2,26 @@ from pickle_storage import PickleStorage
 import cPickle as pickle
 
 class Options(object):
-    def __init__(self, prime, degree_bounds, numpcs, coprod_db):
+    def __init__(self, prime, degree_bounds, ind, numpcs, coprod_db):
+        """prime is an odd prime number
+
+        bounds is a natural number, larger than 5 or so
+
+        ind is a positive integer which divides (prime - 1)
+
+        This program as written only calculates Ext for
+        mot. st. alg. over finite fields. We assume we are in the case
+        where the Bockstein acts non-trivially on coefficients.
+
+        """
         self.prime = prime
         self.bounds = degree_bounds
         self.numpcs = numpcs
         self.coprod_db = coprod_db
+        self.ind = ind
         self.db_flag = False
+        if (self.prime - 1) % self.ind or self.ind > (self.prime - 1):
+            raise TypeError("Your options are invalid!")
         
     def get_prime(self):
         return self.prime
@@ -29,4 +43,4 @@ class Options(object):
         self.db_flag = False
 
 
-opts = Options(17, 10, 2, PickleStorage("coprod_db.pickle"))
+opts = Options(3, 10, 1, 2, PickleStorage("coprod_db.pickle"))

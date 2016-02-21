@@ -4,33 +4,37 @@ import random
 import copy
 
 class Monomial(object):
-    """terms is a list of tuples of the form (y, i) where y is a string
-    "t" or "x" and i is a natural number. We assume terms of the form
-    ("x",0) do not appear. Such terms are 1 in the dual steenrod
-    algebra. An empty list is treated as (coeff * 1). 
+    """Declare a monomial with two lists of natural numbers I, J, and an
+    additional tuple (e, i) corresponding to gamma^e zeta^i.
 
-    Should implement a flag system for checking simplification. 
-    This will cut down on repeated simplifications.
     """
     @staticmethod
     def random(length):
-        terms = []
-        for i in range(length):
-            randint = random.randrange(4)
-            parity = random.randrange(2)
-            if parity:
-                terms.append(("t", randint))
-            else:
-                terms.append(("x", randint+1))
+        randtaus = [ random.randrange(2) for i in
+                     range(length)]
+        randxis = [ random.randrange(3) for i in
+                     range(length)]
+        randcohom = [random.randrange(2), random.randrange(4) ]
+        randcoeff = random.randrange(opts.prime)
+        return Monomial(randtaus, randxis, randcohom, randcoeff)
 
-        return Monomial( terms,  random.randrange(opts.get_prime()))
+    @staticmethod
+    def random_no_cohom(length):
+        randtaus = [ random.randrange(2) for i in
+                     range(length)]
+        randxis = [ random.randrange(3) for i in
+                     range(length)]
+        randcohom = [0,0]
+        randcoeff = random.randrange(opts.prime)
+        return Monomial(randtaus, randxis, randcohom, randcoeff)
 
     @staticmethod
     def unit():
-        return Monomial([],1)
+        return Monomial([], [], [0,0], 1)
+
     @staticmethod
     def null():
-        return Monomial([],0)
+        return Monomial([], [], [0,0], 0)
     
     @staticmethod
     def term_coproduct(term):
@@ -41,78 +45,99 @@ class Monomial(object):
             if term[1] == 0:
                 return TensorPolynomial.unit()
             out = TensorPolynomial.null()
-            out += TensorPolynomial([TensorMonomial([Monomial.unit(), Monomial([term], 1)], 1)])
-            out += TensorPolynomial([TensorMonomial([Monomial([term], 1), Monomial.unit()], 1)])
+            out += TensorPolynomial([TensorMonomial([Monomial.unit(), Monomial.term(term)], [0,0], 1)])
+            out += TensorPolynomial([TensorMonomial([Monomial.term(term), Monomial.unit()], [0,0], 1)])
             for j in range(1, term[1]):
-                out += TensorPolynomial([TensorMonomial([Monomial([("x", term[1]-j)], 1)**(opts.prime**j),\
-                                                         Monomial([("x", j)],1)],1)])
+                out += TensorPolynomial([TensorMonomial([Monomial.term(("x", term[1]-j))**(opts.prime**j),\
+                                                         Monomial.term(("x", j))], [0,0], 1)])
             return out
         elif term[0] == "t":
             out = TensorPolynomial.null()
-            out += TensorPolynomial([TensorMonomial([Monomial.unit(), Monomial([term], 1)],1)])
-            out += TensorPolynomial([TensorMonomial([Monomial([term], 1), Monomial.unit()],1)])
+            out += TensorPolynomial([TensorMonomial([Monomial.unit(), Monomial.term(term)],[0,0], 1)])
+            out += TensorPolynomial([TensorMonomial([Monomial.term(term), Monomial.unit()],[0,0], 1)])
             for j in range(0, term[1]):
-                out += TensorPolynomial([TensorMonomial([Monomial([("x", term[1]-j)],1)**(opts.prime**j),\
-                                                         Monomial([("t", j)],1)],1)])
+                out += TensorPolynomial([TensorMonomial([Monomial.term(("x", term[1]-j))**(opts.prime**j),\
+                                                         Monomial.term(("t", j))], [0,0], 1)])
             return out
 
     @staticmethod
     def tau_list(indices):
-        out = []
-        for i in range(len(indices)):
-            for j in range(indices[i]):
-                out.append(("t",i))
-        return Monomial(out, 1)
+        return Monomial(indices, [], [0,0], 1)
 
     @staticmethod
     def xi_list(indices):
-        out = []
-        for i in range(len(indices)):
-            for j in range(indices[i]):
-                out.append(("x", i+1))
-        return Monomial(out, 1)
+        return Monomial([], indices, [0,0], 1)
 
     @staticmethod
     def tau_xi_list(pair):
-        xx = Monomial.tau_list(pair[0])
-        yy = Monomial.xi_list(pair[1])
-        return xx * yy
+        return Monomial(pair[0], pair[1], [0,0], 1)
+
+    @staticmethod
+    def term(term):
+        """Term is either (t, i) or (x, j)  for i>=0 and j>= 1
+
+        """
+        if term[0] == "t":
+            I = [0]*(term[1]+1)
+            I[term[1]]=1
+            return Monomial(I, [], [0,0], 1)
+        elif term[0] == "x":
+            J = [0]*(term[1])
+            J[term[1]-1] = 1
+            return Monomial([], J, [0,0], 1)
+        else:
+            raise TypeError
+    
+    @staticmethod
+    def cohom_list(indices):
+        return Monomial([], [], indices, 1)
+    
+    def __init__(self, taus, xis, cohom, coeff):
+        """
+        Taus is a list I = [i0, i1, ..., is] corr. to the monomial tau(I)
+
+        Xis is a list J = [j1, j2, ..., jk] corr. to the monomial xi(J)
+
+        cohom is a list [e, i] corr to gamma^e zeta^i
+
+        coeff is a residue mod opts.prime
+        """
         
-    def __init__(self, terms, coeff):
-        self.terms = terms
-        self.coeff = coeff
+        self.taus = taus
+        self.xis = xis
+        self.cohom = cohom
+        self.coeff = coeff % opts.prime
         self.simplify_flag = False
 
-    def __getstate__(self):
-        return {'terms' : self.terms,
-                'coeff' : self.coeff,
-                'simplify_flag' : self.simplify_flag}
+    # def __getstate__(self):
+    #     return {'terms' : self.terms,
+    #             'coeff' : self.coeff,
+    #             'simplify_flag' : self.simplify_flag}
         
-    def __setstate__(self, _dict):
-        self.terms = _dict['terms']
-        self.coeff = _dict['coeff']
-        self.simplify_flag = _dict['simplify_flag']
+    # def __setstate__(self, _dict):
+    #     self.terms = _dict['terms']
+    #     self.coeff = _dict['coeff']
+    #     self.simplify_flag = _dict['simplify_flag']
 
-    def get_terms(self):
-        return self.terms
+    # def get_terms(self):
+    #     return self.terms
 
     def get_coeff(self):
-        return self.coeff % opts.get_prime()
-    
+        return self.coeff 
+
     def get_degree(self):
         """
-        Possibly time consuming, simplifies! 
         """
         self.simplify()
         deg = 0
         wt = 0
-        for term in self.terms:
-            if term[0] == "x":
-                deg += 2*(opts.prime**term[1] - 1) 
-                wt += opts.prime**term[1] - 1
-            elif term[0] == "t":
-                deg += 2*opts.prime**term[1] - 1
-                wt += opts.prime**term[1] - 1
+        deg += xi_deg(self.xis)
+        wt += xi_wt(self.xis)
+        deg += tau_deg(self.taus)
+        wt+= tau_wt(self.taus)
+        deg += self.cohom[0]*(-1)
+        wt += self.cohom[0]*(-1)*opts.ind
+        wt += self.cohom[1]*(-1)*opts.ind
         return (deg, wt)
 
     def copy(self):
@@ -121,57 +146,91 @@ class Monomial(object):
     def __str__(self):
         mystr = ""
         mystr += str(self.get_coeff()) 
-        if not self.terms:
-            return mystr
-        mystr += "."
-        for term in self.terms:
-            mystr += term[0] + str(term[1])
+        if self.cohom[0]:
+            mystr += ".g"
+        if self.cohom[1]:
+            mystr += ".z^" + str(self.cohom[1]) 
+        for i in range(len(self.taus)):
+            if self.taus[i]:
+                mystr += ".t" + str(i) + "^" + str(self.taus[i])
+        for i in range(len(self.xis)):
+            if self.xis[i]:
+                mystr += ".x" + str(i+1) + "^" + str(self.xis[i])
         return mystr
-    
+
     def simplify(self):
-        """
-        Warning! Mutator!
-        """
-        try:
-            if self.simplify_flag:
-                return
-        except AttributeError:
-            print self
-        newterms = sorted([ term for term in self.terms if term[0] == "x" and term[1] > 0], key=lambda term: term[1])
-        tauindices = [ term[1] for term in self.terms if term[0] == "t"]
-        newcoeff = self.coeff
-        if repeats(tauindices):
-            self.terms = []
+        if self.simplify_flag:
+            return
+        if (not self.coeff) or (self.cohom[0] >= 2):
+            self.taus = []
+            self.xis = []
+            self.cohom = [0,0]
             self.coeff = 0
-        elif not self.get_coeff():
-            self.terms = []
-            self.coeff = 0
-        else:
-            tausorted = tauindices[:]
-            tausorted.sort()
-            perm = arePermsEqualParity(tauindices, tausorted)
-            if not perm:
-                self.coeff = -self.coeff
-            newterms += [("t", x) for x in tausorted]
-            self.terms = newterms
         self.simplify_flag = True
 
-    def __mul__(self,other):
+    def __rmul__(self, n):
+        if isinstance(n, int):
+            out = self.copy()
+            out.coeff = (n * out.coeff) % opts.prime
+            return out
+        else:
+            raise TypeError("Expecting an integer")
+        
+    def __mul__(self, other):
         """
         Does not mutate self or other. 
         Returns the product
         """
-        prodterms = self.get_terms() + other.get_terms()
-        prodcoeff = (self.get_coeff() * other.get_coeff() % opts.prime)
-        prod = Monomial(prodterms, prodcoeff)
-        prod.simplify()
-        return prod
-
+        newcoeff = (self.coeff * other.coeff) % opts.prime
+        if not newcoeff:
+            return Monomial.null()
+        newcohom = []
+        if self.cohom[0] + other.cohom[0] >= 2:
+            return Monomial.null()
+        newcohom.append(self.cohom[0] + other.cohom[0])
+        newcohom.append(self.cohom[1] + other.cohom[1])
+        maxtaus = max(len(self.taus), len(other.taus))
+        newtaus = []
+        for i in xrange(maxtaus):
+            try:
+                n = self.taus[i]
+            except IndexError:
+                n = 0
+            try:
+                m = other.taus[i]
+            except IndexError:
+                m = 0
+            if n + m == 2:
+                return Monomial.null()
+            newtaus.append(n+m)
+        maxxis = max(len(self.xis), len(other.xis))
+        newxis = []
+        for i in xrange(maxxis):
+            try:
+                n = self.xis[i]
+            except IndexError:
+                n = 0
+            try:
+                m = other.xis[i]
+            except IndexError:
+                m = 0
+            newxis.append(n+m)
+        selftauindex = [i for i in range(len(self.taus)) if
+                        self.taus[i] == 1]
+        othertauindex = [i for i in range(len(other.taus)) if
+                         other.taus[i] == 1]
+        perm1 = selftauindex + othertauindex
+        perm2 = sorted(perm1)
+        if not arePermsEqualParity(perm1, perm2):
+            newcoeff = (-newcoeff) % opts.prime
+        if other.cohom[0] == 1:
+            newcoeff = ((-1)**(sum(self.taus)) * newcoeff) % opts.prime
+        return Monomial(newtaus, newxis, newcohom, newcoeff)
+        
     def __pow__(self, num):
-        out = Monomial([],1)
+        out = Monomial.unit()
         for i in xrange(num):
             out = out * self
-        out.simplify()
         return out
     
     def __eq__(self, other):
@@ -183,32 +242,87 @@ class Monomial(object):
         other.simplify()
         if self.coeff != other.coeff:
             return False
-        if self.terms != other.terms:
+        if self.cohom != other.cohom:
             return False
+        maxtaus = max(len(self.taus), len(other.taus))
+        for i in xrange(maxtaus):
+            try:
+                n = self.taus[i]
+            except IndexError:
+                n = 0
+            try:
+                m = other.taus[i]
+            except IndexError:
+                m = 0
+            if n != m:
+                return False
+        maxxis = max(len(self.xis), len(other.xis))
+        for i in xrange(maxxis):
+            try:
+                n = self.xis[i]
+            except IndexError:
+                n = 0
+            try:
+                m = other.xis[i]
+            except IndexError:
+                m = 0
+            if n != m:
+                return False
         return True
+
+    def __neq__(self, other):
+        return not (self == other)
 
     def monomials_equal(self, other):
         self.simplify()
         other.simplify()
-        if self.terms != other.terms:
+        if self.cohom != other.cohom:
             return False
+        maxtaus = max(len(self.taus), len(other.taus))
+        for i in xrange(maxtaus):
+            try:
+                n = self.taus[i]
+            except IndexError:
+                n = 0
+            try:
+                m = other.taus[i]
+            except IndexError:
+                m = 0
+            if n != m:
+                return False
+        maxxis = max(len(self.xis), len(other.xis))
+        for i in xrange(maxxis):
+            try:
+                n = self.xis[i]
+            except IndexError:
+                n = 0
+            try:
+                m = other.xis[i]
+            except IndexError:
+                m = 0
+            if n != m:
+                return False
         return True
     
     def coproduct(self):
-        self.simplify()
-        out = TensorPolynomial([TensorMonomial([Monomial.unit(),
-                                                Monomial.unit()],
-                                               self.get_coeff())])
-        for term in self.get_terms():
-            out = out * Monomial.term_coproduct(term)
-            out.simplify()
+        coeff = self.coeff
+        cohom = self.cohom[:]
+        out = TensorPolynomial([ TensorMonomial([Monomial.unit(),
+                                                 Monomial.unit()],
+                                                cohom, coeff)])
+        for i in range(len(self.taus)):
+            if self.taus[i]:
+                out = out * Monomial.term_coproduct(("t", i))
+        for i in range(len(self.xis)):
+            if self.xis[i]:
+                out = out * (Monomial.term_coproduct(("x", i+1))**(self.xis[i]))
         out.simplify()
         return out
             
-    def reduced_coproduct(self):
-        xx = self.coproduct()
-        xx._reduce()
-        return xx 
+    # def reduced_coproduct(self):
+    #     xx = self.coproduct()
+    #     xx._reduce()
+    #     return xx 
     
 class Polynomial(object):
     """
@@ -233,6 +347,7 @@ class Polynomial(object):
     
     def __init__(self, summands):
         self.summands = summands
+        self.simplify_flag = False
 
     def __str__(self):
         string = ""
@@ -270,41 +385,56 @@ class Polynomial(object):
     def __add__(self, other):
         return Polynomial(self.get_summands() + other.get_summands())
 
+    def __rmul(self, n):
+        if isinstance(n, int):
+            newsummands = []
+            for mon in self.get_summands():
+                newsummands.append(n*mon)
+            return Polynomial(newsummands)
+        else:
+            raise TypeError("Expecting integer")
+                
+    
     def __mul__(self, other):
         newsummands = []
         for mon1 in self.get_summands():
             for mon2 in other.get_summands():
                 newsummands.append(mon1*mon2)
         return Polynomial(newsummands)
-
-
             
     def stupid_simplify(self):
+        for monomial in self.get_summands():
+            monomial.simplify()
         for monomial in self.get_summands()[:]:
-            if monomial == Monomial([],0):
+            if monomial == Monomial.null():
                 self.summands.remove(monomial)            
     
     def simplify(self):
         """
         Mutator!
         """
+        if self.simplify_flag:
+            return
         self.stupid_simplify()
         stack = self.get_summands()[:]
         # might need case to rule out 0
-        for mon in stack:
-            mon.simplify()
+        #for mon in stack:
+        #    mon.simplify()
         outsum = []
         while stack:
             mon = stack.pop()
-            similar = [ x for x in stack if mon.monomials_equal(x)]
+            similar = [ x for x in stack if mon.monomials_equal(x) ]
             coefficient = mon.get_coeff()
             for x in similar:
                 coefficient = (coefficient + x.get_coeff()) \
                               % opts.prime
                 stack.remove(x)
             if coefficient:
-                outsum.append(Monomial(mon.get_terms(), coefficient))
+                moncopy = mon.copy()
+                moncopy.coeff = coefficient
+                outsum.append(moncopy)
         self.summands = outsum
+        self.simplify_flag = True
 
     def copy(self):
         return copy.deepcopy(self)
@@ -314,13 +444,11 @@ class Polynomial(object):
         This should maybe mutate monomials to simplified form?
         Currently uses costly copies
         """
-        selfcopy = self.copy()
-        othercopy = other.copy()
-        selfcopy.simplify()
-        othercopy.simplify()
-        stack1 = selfcopy.get_summands()[:]
-        stack2 = othercopy.get_summands()[:]
-        for x in selfcopy.get_summands():
+        self.simplify()
+        other.simplify()
+        stack1 = self.get_summands()[:]
+        stack2 = other.get_summands()[:]
+        for x in self.get_summands()[:]:
             if x in stack2:
                 stack1.remove(x)
                 stack2.remove(x)
@@ -330,7 +458,9 @@ class Polynomial(object):
             return False
         else:
             return True
-                
+
+    def __neq__(self, other):
+        return not (self == other)
 
 class TensorMonomial(object):
     """
@@ -341,52 +471,83 @@ class TensorMonomial(object):
     """
     @staticmethod
     def random(x):
-        return TensorMonomial([Monomial.random(x), Monomial.random(x)], random.randrange(opts.prime))
+        randcoeff = random.randrange(opts.prime)
+        randcohom = [random.randrange(2), random.randrange(4) ]
+        xx = Monomial.random(x)
+        yy = Monomial.random(x)
+        xx.cohom = [0,0]
+        yy.cohom = [0,0]
+        return TensorMonomial([xx, yy], randcohom, randcoeff)
 
     @staticmethod
     def unit():
-        return TensorMonomial([Monomial.unit(), Monomial.unit()], 1)
+        return TensorMonomial([Monomial.unit(), Monomial.unit()], [0,0], 1)
 
     @staticmethod
     def null():
-        return TensorMonomial([Monomial.unit(), Monomial.unit()], 0)
+        """
+        Should the tensor factors be MOnomial.null()? Careful! 
+        """
+        return TensorMonomial([Monomial.unit(), Monomial.unit()], [0,0], 0)
     
-    def __init__(self, pair, coeff):
+    def __init__(self, pair, cohom, coeff):
+        """Pair is a list consisting of two Monomial objects. The monomial
+objects should not have any terms from mot. coh., i.e., cohom = [0,0].
+
+        cohom = [e, i] describes the coefficient of motivic cohomology
+        (mult. on left)
+
+        coeff is the coefficient
+
+        """
         self.pair  = pair
+        self.cohom = cohom                      
         self.coeff = coeff
         self.simplify_flag = False
 
-    def __getstate__(self):
-        return {'pair' : self.pair, 'coeff' : self.coeff}
+    # def __getstate__(self):
+    #     return {'pair' : self.pair, 'coeff' : self.coeff}
 
-    def __setstate__(self, _dict):
-        self.pair = _dict['pair']
-        self.coeff = _dict['coeff']
+    # def __setstate__(self, _dict):
+    #     self.pair = _dict['pair']
+    #     self.coeff = _dict['coeff']
     
     def get_pair(self):
         return self.pair
 
     def get_coeff(self):
         return self.coeff
-    
+
+    def get_cohom(self):
+        return self.cohom
+
     def get_degree(self):
         adeg = self.pair[0].get_degree()
         bdeg = self.pair[1].get_degree()
+        cohomdeg = cohom_bideg(self.cohom)
         if self.coeff:
-            return (adeg[0] + bdeg[0], adeg[1] + bdeg[1])
+            return (adeg[0] + bdeg[0] + cohomdeg[0], adeg[1] + bdeg[1] + cohomdeg[1])
         else:
             return (0,0)
 
     def __str__(self):
         if not self.coeff:
             return "0"
-        return str(self.coeff) + "*" \
-            + str(self.pair[0]) + " | " \
-            + str(self.pair[1])
+        out = str(self.coeff) 
+        if self.cohom[0]:
+            out += ".g"
+        if self.cohom[1]:
+            out += ".z^" + str(self.cohom[1])
+        out += "." + str(self.pair[0]) + " | " + str(self.pair[1])
+        return out
 
+    def copy(self):
+        return copy.deepcopy(self)
+    
     def simplify(self):
-        """
-        Warning! Mutator!
+        """This will become more complicated. Will need to return a tensor
+        polynomial object to be entirely general.
+
         """
         if self.simplify_flag:
             return
@@ -396,16 +557,30 @@ class TensorMonomial(object):
         self.pair[0].coeff = 1
         self.pair[1].coeff = 1
         self.coeff = newcoeff
+        if self.pair[0].cohom != [0,0] or self.pair[1].cohom != [0,0]:
+            raise TypeError("Can't handle cohom in pair yet")
         if not self.coeff:
-            self.pair[0] = Monomial([],1)
-            self.pair[1] = Monomial([],1)
+            self.pair[0] = Monomial.unit()
+            self.pair[1] = Monomial.unit()
         self.simplify_flag = True
 
+    def __rmul__(self, n):
+        if isinstance(n, int):
+            out = self.copy()
+            out.coeff = (n * out.coeff) % opts.prime
+            return out
+        else:
+            raise TypeError("Expecting an integer")
+
+        
     def __mul__(self, other):
         newpair = [self.pair[0] * other.pair[0], self.pair[1] * other.pair[1] ]
-        sign_fix = self.pair[1].get_degree()[0] *other.pair[0].get_degree()[0] 
+        sign_fix = self.pair[1].get_degree()[0] *(other.pair[0].get_degree()[0] + cohom_deg(other.cohom))
         newcoeff = ((-1)**sign_fix * self.coeff * other.coeff) % opts.prime
-        out = TensorMonomial(newpair, newcoeff)
+        newcohom = [self.cohom[0] + other.cohom[0], self.cohom[1] +
+                    other.cohom[1]]
+        
+        out = TensorMonomial(newpair, newcohom, newcoeff)
         out.simplify()
         return out
 
@@ -416,15 +591,12 @@ class TensorMonomial(object):
         self.simplify()
         other.simplify()
         if self.coeff != other.coeff:
-#            print "coeffs diff"
             return False
         elif not self.pair[0] == other.pair[0]:
-#            print "first terms diff"
-#            print self.pair[0].terms, self.pair[0].coeff
-#            print other.pair[0].terms, self.pair[0].coeff
             return False
         elif not self.pair[1] == other.pair[1]:
-#            print "second terms diff"
+            return False
+        elif self.cohom != other.cohom:
             return False
         return True
 
@@ -439,13 +611,15 @@ class TensorMonomial(object):
             return False
         elif not self.pair[1] == other.pair[1]:
             return False
+        elif not self.cohom == other.cohom:
+            return False
         return True
 
-    def _reduce(self):
-        self.simplify()
-        for mon in self.get_pair():
-            if mon == Monomial.unit():
-                self.coeff = 0
+    # def _reduce(self):
+    #     self.simplify()
+    #     for mon in self.get_pair():
+    #         if mon == Monomial.unit():
+    #             self.coeff = 0
             
     
 class TensorPolynomial(object):
@@ -479,10 +653,10 @@ class TensorPolynomial(object):
         return self.summands
 
     def stupid_simplify(self):
+        for mon in self.summands:
+            mon.simplify()
         for mon in self.summands[:]:
-            
-            if mon == TensorMonomial([Monomial([],0),
-                                      Monomial([],0)],0):
+            if mon == TensorMonomial.null():
                 self.summands.remove(mon)
 
     def simplify(self):
@@ -503,7 +677,8 @@ class TensorPolynomial(object):
                               % opts.prime
                 stack.remove(x)
             if coefficient:
-                outsum.append(TensorMonomial(mon.get_pair(), \
+                outsum.append(TensorMonomial(mon.get_pair(),
+                                             mon.get_cohom(),
                                              coefficient))
         self.summands = outsum
         self.simplify_flag = True
@@ -520,6 +695,15 @@ class TensorPolynomial(object):
         return TensorPolynomial(self.get_summands() \
                                 + other.get_summands())
 
+    def __rmul__(self, n):
+        if isinstance(n, int):
+            newsummands = []
+            for mon in self.get_summands():
+                newsummands.append(n*mon)
+            return Polynomial(newsummands)
+        else:
+            raise TypeError("Expecting integer")
+
     def __mul__(self, other):
         newsummands = []
         for mon1 in self.get_summands():
@@ -527,34 +711,18 @@ class TensorPolynomial(object):
                 newsummands.append(mon1*mon2)
         return TensorPolynomial(newsummands)
 
-    def _reduce(self):
-        for tmon in self.summands:
-            tmon._reduce()
-        self.simplify()
+    def __pow__(self, n):
+        out = TensorPolynomial.unit()
+        for i in xrange(n):
+            out = out * self
+        return out
 
-#######################################################
         
-# class CobarMonomial(object):
-#     """
-#     This is a generalized TensorMonomial object 
-#     which allows for more tensor factors
-#     """
-#     def __init__(self, factors, coeff):
-#         self.factors = factors
-#         self.coeff = coeff
-        
-# class CobarPolynomial(object):
-#     """
-#     This is a generalized TensorPolynomial object
-#     which allows for more tensor factors.
+    # def _reduce(self):
+    #     for tmon in self.summands:
+    #         tmon._reduce()
+    #     self.simplify()
 
-#     As we may use reduced cobar construction, should 
-#     can perform reduced calculations.
-#     """
-#     def __init__(self, summands):
-#         self.summands = summands
-
-    
 ############################################################
     
 def repeats(alist):
@@ -625,7 +793,16 @@ def tau_wt(I):
     for i in range(len(I)):
         out += I[i]*(opts.prime**i - 1)
     return out
-    
+
+def cohom_deg(cohom):
+    return -cohom[0]
+
+def cohom_wt(cohom):
+    return -(cohom[0] + cohom[1])*opts.ind    
+
+def cohom_bideg(cohom):
+    return (cohom_deg(cohom), cohom_wt(cohom))
+
 def xi_indices():
     """
     Returns a list of all allowable indices J for which x(J) has 
@@ -698,7 +875,7 @@ def all_indices():
     sort_out = sorted(out, key=lambda pair: \
                       tau_deg(pair[0]) + xi_deg(pair[1]))
     #this needs to go back for reduced list
-    sort_out.remove((xx, yy))
+    #sort_out.remove((xx, yy))
     return sort_out
 
     
