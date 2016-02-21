@@ -651,6 +651,7 @@ class CobarComplex(object):
         self.map_cohom_flag = False
 
     def make_module_cohom(self, f):
+        print "making module cohom f", f
         module = self.get_cplx()[f]._dict
         newmodule = self.cplx_cohom[f]._dict
         for bideg in module.keys():
@@ -658,10 +659,11 @@ class CobarComplex(object):
                 if bideg not in newmodule:
                     newmodule[bideg] = []
                 # append elt with cohom coeff 1
-                if not any(x == elt for x in newmodule[bideg]):
-                    newmodule[bideg].append(elt.copy())
-                else:
-                    print "duplicate", elt
+                newmodule[bideg].append(elt.copy())
+                # if not any(x == elt for x in newmodule[bideg]):
+                #     newmodule[bideg].append(elt.copy())
+                # else:
+                #     print "duplicate", elt
                 for i in range(bideg[1]/opts.ind):
                     # append elt with zeta multiple
                     newelt = elt.copy()
@@ -669,20 +671,24 @@ class CobarComplex(object):
                     newbideg = newelt.get_degree()
                     if newbideg not in newmodule:
                         newmodule[newbideg] = []
-                    if not any(x == newelt for x in newmodule[newbideg]):
-                        newmodule[newbideg].append(newelt)
-                    else:
-                        print "duplicate", newelt
+                    #
+                    newmodule[newbideg].append(newelt)
+                    # if not any(x == newelt for x in newmodule[newbideg]):
+                    #     newmodule[newbideg].append(newelt)
+                    # else:
+                    #     print "duplicate", newelt
                     # now a gamma zeta multiple
                     newelt = elt.copy()
                     newelt.cohom = [1,i]
                     newbideg = newelt.get_degree()
                     if newbideg not in newmodule:
                         newmodule[newbideg] = []
-                    if not any(x == newelt for x in newmodule[newbideg]):
-                        newmodule[newbideg].append(newelt)
-                    else:
-                        print "duplicate", newelt
+                    #
+                    newmodule[newbideg].append(newelt)
+                    # if not any(x == newelt for x in newmodule[newbideg]):
+                    #     newmodule[newbideg].append(newelt)
+                    # else:
+                    #     print "duplicate", newelt
     
     def make_map_cohom(self, i):
         """
