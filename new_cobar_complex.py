@@ -555,8 +555,8 @@ class CobarComplex(object):
                             if not any(other == elt for other in
                                        curr[(deg, wt)]):
                                 curr[(deg, wt)].append(elt)
-                            else:
-                                print "duplicate", elt
+#                            else:
+#                                print "duplicate", elt
                 else:
                     break
 
