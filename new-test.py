@@ -1,10 +1,10 @@
 from options import opts
-from dual_st_alg import Monomial, Polynomial, opts, TensorMonomial, TensorPolynomial
-#from new_mon import *
+#from dual_st_alg import Monomial, Polynomial, opts, TensorMonomial, TensorPolynomial
+from new_mon import *
 from mod_lin_alg import ModVector, ModMatrix
 from cohomology import Cohomology
-from cobar_complex import CobarMonomial, CobarPolynomial, CobarModule, CobarComplex
-#from new_cobar_complex import *
+#from cobar_complex import CobarMonomial, CobarPolynomial, CobarModule, CobarComplex
+from new_cobar_complex import *
 import random
 
 #opts.prime = 3
@@ -578,12 +578,12 @@ def cohom_cohom_test(f):
                     print C.element_from_vector_cohom(vect, i,d,w)
     C.pickle_cplx()
 
-# opts.prime = 3
-# opts.ind = 2
-# opts.bounds = 10
-# C = CobarComplex(6)
-# C.get_pickled_cplx()
-# C.extend_complex_cohom(7)
-# C.get_maps_cohom()
-# C.pickle_cplx()
-# cohom_cohom_test(5)
+opts.prime = 3
+opts.ind = 2
+opts.bounds = 10
+C = CobarComplex(6)
+C.get_pickled_cplx()
+C.extend_complex_cohom(7)
+C.get_maps_cohom()
+C.pickle_cplx()
+cohom_cohom_test(5)
