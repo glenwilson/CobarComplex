@@ -399,8 +399,7 @@ class Polynomial(object):
             return Polynomial(newsummands)
         else:
             raise TypeError("Expecting integer")
-                
-    
+                    
     def __mul__(self, other):
         newsummands = []
         for mon1 in self.get_summands():
@@ -694,9 +693,9 @@ class TensorPolynomial(object):
                               % opts.prime
                 stack.remove(x)
             if coefficient:
-                outsum.append(TensorMonomial(mon.get_pair(),
-                                             mon.get_cohom(),
-                                             coefficient))
+                moncopy = mon.copy()
+                moncopy.coeff = coefficient 
+                outsum.append(moncopy)
         self.summands = outsum
         self.simplify_flag = True
 

@@ -339,6 +339,10 @@ class CobarPolynomial(object):
                               % opts.prime
                 stack.remove(x)
             if coefficient:
+                #perhaps fix to this
+                # outmon = mon.copy()
+                # mon.coefficient = coefficient
+                # outsum.append(outmon)
                 outsum.append(CobarMonomial(mon.get_factors(),
                                             mon.filt, mon.cohom,
                                             coefficient))
