@@ -503,39 +503,41 @@ def vfe_test(x,f,n):
 #opts.prime=5
 #opts.bounds=15
 #vfe_test(1,1,10)
-
 def cohom_test(f):
-    C = CobarComplex(f+2)
-    C.get_pickled_cplx()
-    #C.make_maps()
-    for i in range(1,f+1):
-        for bideg in C.get_cplx()[i]._dict.keys():
-            d = bideg[0]
-            w = bideg[1]
-            cohom = C.get_cohomology(i,d,w)
-            print "Filt, deg, wt", i, d, w
-            cc = cohom.get_cohomology()
-            print cc
-            if cc.get_basis():
-                for vect in cc.get_basis():
-                    print C.element_from_vector(vect, i,d,w)
-    C.pickle_cplx()
+        out = open("cohom"+str(opts.prime)+"-"+str(opts.bounds)+".txt", "a")
+        C = CobarComplex(f+2)
+        C.get_pickled_cplx()
+        #C.make_maps()
+        for i in range(1,f+1):
+            for bideg in C.get_cplx()[i]._dict.keys():
+                d = bideg[0]
+                w = bideg[1]
+                cohom = C.get_cohomology(i,d,w)
+                out.write("Filt, deg, wt"+str(i)+" "+str(d)+" "+str(w)+"\n")
+                cc = cohom.get_cohomology()
+                out.write(str(cc)+"\n")
+                if cc.get_basis():
+                    for vect in cc.get_basis():
+                        out.write(str(C.element_from_vector(vect, i,d,w))+"\n")
+        C.compute_product_structure()
+        for thing in C.product_generators:
+            out.write(str(thing.get_degree()) + " " + str(thing) + "\n")
+        out.close()
+        C.pickle_cplx()
 
     
 opts.prime = 5
 opts.bounds = 35
-#cohom_test(3)
-C = CobarComplex(5)
-C.get_pickled_cplx()
-print C.module_flag
-print C.map_flag
-print C.get_maps()[2]._maps.keys()
-#C.extend_complex(5)
-C.pickle_cplx()
 
-C.compute_product_structure()
-for thing in C.product_generators:
-    print thing.get_degree(), thing, "\n"
+#C = CobarComplex(5)
+#C.get_pickled_cplx()
+#C.extend_complex(5)
+#C.pickle_cplx()
+cohom_test(3)
+
+#C.compute_product_structure()
+#for thing in C.product_generators:
+#    print thing.get_degree(), thing, "\n"
 
 #C = CobarComplex(4)
 #C.get_pickled_cplx()
