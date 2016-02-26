@@ -51,6 +51,9 @@ class Cohomology(object):
     def get_cohomology_flag(self):
         return self.cohomology_flag
 
+    def get_cohomology_dim(self):
+        return self.B.get_nullity() - self.A.get_rank()
+    
     def get_zero_vector(self):
         dim = self.get_A().get_size()[0]
         return ModVector.null(dim)
@@ -98,6 +101,12 @@ class Cohomology(object):
 
     def compute_cohomology(self):
         cohomology = ModVectorSpace([])
+        ##### Tweak to check dimension before working
+        if not self.get_cohomology_dim():
+            self.cohomology = cohomology
+            self.cohomology_flag = True
+            return
+        #####
         index_list = self.get_kernel().get_basis()[:]
         basis_list = []
         for ker_element in index_list:
@@ -123,12 +132,13 @@ class Cohomology(object):
 
     def get_cohomology(self):
         if not self.get_cohomology_flag():
-            if not self.im_in_ker():
-                print "matrix for image"
-                print str(self.A)
-                print "matrix for kernel"
-                print str(self.B)
-                raise TypeError("Not exact here!")
+            #Bravely skip this to save time. hope for the best?
+            # if not self.im_in_ker():
+            #     print "matrix for image"
+            #     print str(self.A)
+            #     print "matrix for kernel"
+            #     print str(self.B)
+            #     raise TypeError("Not exact here!")
             self.compute_cohomology()
         return self.cohomology
 

@@ -1,4 +1,4 @@
-from dual_st_alg import Monomial, Polynomial, TensorMonomial, TensorPolynomial, all_indices, tau_deg, xi_deg, tau_wt, xi_wt
+from dual_st_alg import *
 from options import opts
 from cohomology import Cohomology
 from mod_lin_alg import ModVector, ModMatrix
@@ -34,6 +34,14 @@ class CobarMonomial(object):
         self.coeff = coeff
         self.simplify_flag = False
 
+    def copy(self):
+        newfactors = [mon.copy() for mon in self.factors]
+        newfilt = self.filt
+        newcoeff = self.coeff
+        out = CobarMonomial(newfactors, newfilt, newcoeff)
+        out.simplify_flag = self.simplify_flag
+        return out
+
     def get_coeff(self):
         return self.coeff
 
@@ -54,10 +62,14 @@ class CobarMonomial(object):
     def __str__(self):
         if not self.coeff:
             return "0"
-        string = str(self.coeff) + "*"
+        string = str(self.coeff) + "."
+        string += "["
         for mon in self.factors:
             string += str(mon) + " | "
-        return string[:-3]
+        if self.filt:
+            return string[:-3] + "]"
+        else:
+            return string + "]"
 
     def simplify(self):
         """Warning! Mutatior!
@@ -172,21 +184,11 @@ class CobarMonomial(object):
     def _map(self):
         out = CobarPolynomial([])
         self.simplify()
-        print self
-        ###
         out = out + (CobarMonomial.unit(1) & self)
-        print out
         out = out + ((-1)**(self.filt+1) % opts.prime) * (self & CobarMonomial.unit(1))
-        print out
-        ###
-        
         for i in range(self.filt):
             mon = self.factors[i]
-            #change this to .reduced_coproduct() if you figure out
-            #correct deal for reduced thing!
             coprod = mon.coproduct()
-#            print "mon", mon
-#            print "coprod", coprod
             left = CobarMonomial(self.factors[:i], i, 1)
             right = CobarMonomial(self.factors[i+1:], \
                                   len(self.factors[i+1:]), 1)
@@ -206,17 +208,9 @@ class CobarMonomial(object):
             right = CobarMonomial(self.factors[i+1:], \
                                   len(self.factors[i+1:]), 1)
             out = out + (self.coeff * (((-1)**(i+1) % opts.prime )) * ((left & coprod) & right))
-            #for summand in out.summands:
-            #    coeff_fix = 1
-            #    for term in summand.factors[:i+1]:
-            #        coeff_fix *= (-1)**(mon.get_degree()[0]+1)
-            #    coeff_fix = coeff_fix % opts.prime
-            #    summand.coeff = summand.coeff * coeff_fix    
-            #print out
         out.simplify()
         return out
 
-        
             
 class CobarPolynomial(object):
     """
@@ -268,6 +262,8 @@ class CobarPolynomial(object):
         return CobarPolynomial(out)
 
     def stupid_simplify(self):
+        for mon in self.summands:
+            mon.simplify()
         for mon in self.summands[:]:
             if mon == CobarMonomial.null(mon.filt):
                 self.summands.remove(mon)
@@ -290,8 +286,9 @@ class CobarPolynomial(object):
                               % opts.prime
                 stack.remove(x)
             if coefficient:
-                outsum.append(CobarMonomial(mon.get_factors(),
-                                            mon.filt, coefficient))
+                outmon = mon.copy()
+                mon.coefficient = coefficient
+                outsum.append(outmon)
         self.summands = outsum
         self.simplify_flag = True
 
@@ -319,7 +316,10 @@ class CobarPolynomial(object):
     #     return CobarPolynomial(newsummands)
 
     def copy(self):
-        return copy.deepcopy(self)
+        out = CobarPolynomial([mon.copy() for mon in self.summands])
+        out.simplify_flag = self.simplify_flag 
+        return out
+
     
     def __rmul__(self, n):
         """ scalar multiplication by n"""
@@ -358,6 +358,9 @@ class CobarPolynomial(object):
         coefficient
 
         """
+        monomial.simplify()
+        if not monomial.coeff:
+            return False
         self.simplify()
         for mon in self.summands:
             if mon.factors_equal(monomial):
@@ -384,11 +387,6 @@ class CobarModule(object):
         #check flag to see if dictionary has been
         #populated with bases
         self.flag = False
-
-#    def elt_to_vector(self, elt):
-
-#    def vector_to_elt(self, vector, bidegree):
-    
         
         
 class CobarComplex(object):
@@ -400,7 +398,42 @@ class CobarComplex(object):
         self.cplx = [CobarModule() for i in range(self.length + 1)]
         self.module_flag = False
         self.map_flag = False
+        self.product_flag = False
+        self.product_generators = []
+        self.cohomology = [{} for i in range(self.length + 1)]
+        
+    def make_maps(self):
+        if self.map_flag:
+            return
+        for i in range(self.length):
+            if not self.cplx[i]._maps.keys():
+                self.make_map(i)
+        self.map_flag = True
+        
+    def get_map(self, f):
+        if not self.map_flag:
+            self.make_maps()
+        return self.cplx[f]._maps
 
+    def get_maps(self):
+        if not self.map_flag:
+            self.make_maps()
+        return self.cplx
+    
+    def get_module(self, f):
+        if not self.module_flag:
+            self.generate_modules()
+        return self.cplx[f]._dict
+    
+    def get_cplx(self):
+        """Get this to implement unpickling. check to see if there is a
+        pickled file? Or will that be too time consuming?
+
+        """
+        if not self.module_flag:
+            self.generate_modules()
+        return self.cplx
+    
     def generate_modules(self):
         """
         This will produce the first self.length + 1 modules 
@@ -420,43 +453,16 @@ class CobarComplex(object):
         for pair in Indices:
             elt = CobarMonomial([Monomial.tau_xi_list(pair)], 1, 1)
             deg = elt.get_degree()
-            try:
-                first[deg] += [elt]
-            except KeyError:
-                first[deg] = [elt]
+            if deg not in first:
+                first[deg] = []
+            first[deg].append(elt)
         # Now proceed to fill in remaining modules
         for f in range(2,self.length+1):
             self.make_next_module(f)
-            # prev = self.cplx[f-1]._dict
-            # curr = self.cplx[f]._dict
-            # # for each existing bidegree
-            # for bideg in prev.keys():
-            #     #try to insert a monomial 
-            #     for pair in Indices:
-            #         deg = bideg[0] + tau_deg(pair[0]) + xi_deg(pair[1])
-            #         wt = bideg[1] + tau_wt(pair[0]) + xi_wt(pair[1])
-            #         # check degree works
-            #         if deg <= opts.bounds:
-            #             try:
-            #                 curr[(deg, wt)]
-            #             except KeyError:
-            #                 curr[(deg, wt)] = []
-            #             #if it does, insert
-            #             for monomial in prev[bideg]:
-            #                 for k in range(f):
-            #                     elt = monomial.insert(k, Monomial.tau_xi_list(pair))
-            #                     flag = False
-            #                     for other in curr[(deg, wt)]:
-            #                         if other == elt:
-            #                             flag = True
-            #                             break
-            #                     if not flag:
-            #                         curr[(deg, wt)] += [elt]
-            #         else:
-            #             break
         self.module_flag = True
 
     def make_next_module(self, f):
+        print "making module f", f
         Indices = all_indices()
         prev = self.cplx[f-1]._dict
         curr = self.cplx[f]._dict
@@ -468,41 +474,29 @@ class CobarComplex(object):
                 wt = bideg[1] + tau_wt(pair[0]) + xi_wt(pair[1])
                 # check degree works
                 if deg <= opts.bounds:
-                    try:
-                        curr[(deg, wt)]
-                    except KeyError:
+                    if (deg, wt) not in curr:
                         curr[(deg, wt)] = []
                     #if it does, insert
                     for monomial in prev[bideg]:
                         for k in range(f):
-                            elt = monomial.insert(k, Monomial.tau_xi_list(pair))
-                            flag = False
-                            for other in curr[(deg, wt)]:
-                                if other == elt:
-                                    flag = True
-                                    break
-                            if not flag:
-                                curr[(deg, wt)] += [elt]
+                            elt = monomial.insert(k,
+                                                  Monomial.tau_xi_list(pair))
+                            if not any(other == elt for other in
+                                       curr[(deg, wt)]):
+                                curr[(deg, wt)].append(elt)
                 else:
                     break
 
-        
-    def extend_bounds(self, bounds):
-        """This will take an existing complex and extend the modules which are
-        present to be complete up to the given bounds
-
-        """
-        pass
         
     def extend_complex(self, length):
         """This will pickup an existing complex of the given length and add
         on the additional modules to the complex.
 
         """
-        if not self.module_flag or not self.map_flag:
+        if not self.module_flag:
             self.length = length
+            self.cplx = [CobarModule() for i in range(self.length + 1)]
             self.generate_modules()
-            self.make_maps()
             return
         old_length = self.length
         self.length = length
@@ -514,31 +508,7 @@ class CobarComplex(object):
         for f in range(self.length+1):
             if not self.cplx[f]._dict.keys():
                 self.make_next_module(f)
-        for f in range(self.length):
-            if not self.cplx[f]._maps.keys():
-                self.make_map(f)
         self.module_flag = True
-
-        
-    def product_structure(self):
-        pass
-
-    def massey_products(self):
-        pass
-    
-    def get_cplx(self):
-        """Get this to implement unpickling. check to see if there is a
-        pickled file? Or will that be too time consuming?
-
-        """
-        if not self.module_flag:
-            self.generate_modules()
-        return self.cplx
-
-    def get_maps(self):
-        if not self.map_flag:
-            self.make_maps()
-        return self.cplx
     
     def make_map(self, i):
         """
@@ -551,12 +521,10 @@ class CobarComplex(object):
         this is a huge timesink. try to do multiprocessing,
         check methods for too much simplification
         """
-        #print "in make map", i
         dom = self.get_cplx()[i]
         rng = self.get_cplx()[i+1]
         for bideg in dom._dict.keys():
             out = []
-            #print "at bideg", bideg
             dom_basis = dom._dict[bideg]
             cols = len(dom_basis)
             try:
@@ -579,27 +547,23 @@ class CobarComplex(object):
                 dom._maps[bideg] = ModMatrix.null(rows, cols)
                 continue
             for mon in dom_basis:
-                #print "filtration", i, "at bidegree", bideg
-                #print "mon", mon
                 value = mon._map_reduced()
-                #print "val", value
                 vect = self.vector_from_element(value, i+1, bideg[0],
                                                 bideg[1])
-                #print "vector to append", vect
                 out.append(vect)
             matrix = ModMatrix(out).get_transpose()
-            print "i, bideg", i, bideg
-            print matrix
+            print " Made matrix: i, bideg, size", i, bideg, matrix.get_size()
             dom._maps[bideg] = matrix 
-            
-    def make_maps(self):
-        if self.map_flag:
-            return
-        for i in range(self.length):
-            self.make_map(i)
-        self.map_flag = True
 
     def get_cohomology(self, filt, deg, wt):
+        if not ((deg, wt) in self.cohomology[filt]):
+            self.make_cohomology(filt,deg,wt)
+        try:
+            return self.cohomology[filt][(deg, wt)]
+        except KeyError:
+            print "filt, deg, wt", filt, deg, wt
+            
+    def make_cohomology(self, filt, deg, wt):
         """
         returns a cohomology object corr. to filt, deg, wt
         #Returns 0 cohomology object if deg, wt doesn't appera
@@ -631,25 +595,17 @@ class CobarComplex(object):
             cplx[filt - 1]._dict[(deg, wt)] = []
             # We must now check dimensions of A_basis and B_basis
             # to account for 0 diml vspaces
-#        print "Abasis", len(A_basis)
-#        print "Bbasis", len(B_basis)
         if len(B_basis) == 0:
             #this means cohom is 0 diml
             #resulting cohom object will not match up with vect/elt
             #translation
-            #print "B basis null"
             A = ModMatrix.null(1,1)
             B = ModMatrix.identity(1)
         elif not B.row_count:
             #print "B has no rows"
             B = ModMatrix.null(1, len(B_basis))
         cohom = Cohomology(B, A)
-#        print "bideg key error", filt, deg, wt
-#        print "filt - 1",  cplx[filt - 1]._dict.keys()
-#        print "filt", cplx[filt]._dict.keys()
-#        print "filt - 1 ", cplx[filt - 1]._maps.keys()
-#        print "filt", cplx[filt]._maps.keys()
-        return cohom
+        self.cohomology[filt][(deg,wt)] = cohom
 
     def vector_from_element(self, elt, filt, deg, wt):
         """returns vector in standard basis as determined by the
@@ -688,25 +644,144 @@ class CobarComplex(object):
             elt = elt + ( vector[i] * basis[i])
         elt.simplify()
         return elt
+        
+    def extend_bounds(self, bounds):
+        """This will take an existing complex and extend the modules which are
+        present to be complete up to the given bounds
+
+        """
+        pass
+
+    # def compute_product(self, mod_elt1, mod_elt2, pos1, pos2):
+    #     """mod_elt1 is in pos1 in the filtration mod_elt2 is in pos2
+    #     in the filtration
+
+    #     """
+
+    def compute_product_structure(self):
+        if self.product_flag:
+            return
+        for f in range(1,self.length):
+            self.generate_product_structure(f)
+        self.product_flag = True
+    
+    def generate_product_structure(self, f):
+        """This goes through the filtration at hand to identify a generating
+        set for Ext. Start with an empty list, and start at filtration
+        1.  Go through the degrees in order and then the weights in
+        order. if you find a spot which is not hit, add to your list
+        of generators. then generate all products with it and your
+        current list in the bounds. 
+
+        """
+        curr_mod = self.get_maps()[f]._dict
+        curr_map = self.get_maps()[f]._maps
+        keys = curr_mod.keys()[:]
+        keys.sort()
+        #go through each bidegree and check if
+        for bideg in keys:
+            #product cohomology generates cohomology in that deg
+            # if it does, continue
+            #if not, add new elt to product basis
+            #and add new elt to self.product_generators
+            #then update products for element
+            cohom = self.get_cohomology(f,bideg[0],bideg[1])
+            cc = cohom.get_cohomology().get_basis()
+            ccprod = cohom.get_product().get_basis()
+            if len(ccprod) < len(cc):
+                for vect in cc:
+                    if not cohom.in_cohomology_subspace(ccprod, vect):
+                        ccprod.append(vect)
+                        newelt = self.element_from_vector(vect, f,
+                                                          bideg[0],
+                                                          bideg[1])
+                        self.product_generators.append(newelt)
+                        self.update_products(newelt, f)
+
+
+    def update_products(self, element, f):
+        """
+        element is in filtration f
+        element is an honest CobarPolynomial
+        """
+        if f == 0 and element.get_degree() == (0, 0):
+            return
+        #Go through each level of filtration i>0
+        eltdeg = element.get_degree()
+        for i in range(1,self.length):
+            keys = self.get_maps()[i]._dict.keys()
+            keys.sort()
+            #go through each bidegree
+            for bideg in keys:
+                #check if should be >self.length-1
+                if (eltdeg[0]+bideg[0] > opts.bounds) or (f+i >
+                                                          self.length-1):
+                    continue
+                print "bideg, f", bideg, f
+                cohom = self.get_cohomology(i,bideg[0],bideg[1])
+                cc = cohom.get_cohomology().get_basis()
+                ccprod = cohom.get_product().get_basis()
+                #might need to check if cohom dim is actually 0
+                for vect in ccprod:
+                    other = self.element_from_vector(vect, i,
+                                                     bideg[0], bideg[1])
+                    prod = element & other
+                    print "multiplying", element, other
+                    print "product", prod
+                    proddeg = prod.get_degree()
+                    prodcohom = self.get_cohomology(f+i, proddeg[0],
+                                                    proddeg[1])
+                    prodvect = self.vector_from_element(prod, f+i,
+                                                        proddeg[0],
+                                                        proddeg[1])
+                    
+                    print proddeg, f+i
+                    print prodcohom.get_cohomology()
+                    print prodvect
+                    if not prodcohom.in_cohomology_subspace(prodcohom.get_product().get_basis(), prodvect):
+                        prodcohom.get_product().get_basis().append(prodvect)
+                        print "new product"
+                    else:
+                        print "not new"
+                        
+        #if cohomology in bideg is nonzero, continue
+        #for each element of the product basis of that cohomology group
+        #calculate product and add try to add it to the new product basis
+        #but check if it is a new element in cohomology
+
+        
+    def massey_products(self):
+        pass
 
     def pickle_cplx(self):
-        filename = "complex" + str(opts.prime) + \
-        "-" + str(opts.bounds) + "-" + str(self.length) + ".pickle"
-        str(self.length) +"-" + str(opts.bounds) + ".pickle"
+        filename = "complex" + str(opts.prime) + "-" + \
+                   str(opts.bounds) + "-" + \
+                   str(self.length) + ".pickle"
         pickle_file = open(filename, "wb")
+        pickle.dump(self.length, pickle_file, -1)
         pickle.dump(self.cplx, pickle_file, -1)
+        pickle.dump(self.module_flag, pickle_file, -1)
+        pickle.dump(self.map_flag, pickle_file, -1)
+        pickle.dump(self.product_flag, pickle_file, -1)
+        pickle.dump(self.product_generators, pickle_file, -1)
+        pickle.dump(self.cohomology, pickle_file, -1)
         pickle_file.close()
 
     def get_pickled_cplx(self):
-        filename = "complex" + str(opts.prime) + \
-        "-" + str(opts.bounds) + "-" + str(self.length) + ".pickle"
+        filename = "complex" + str(opts.prime) + "-" + \
+                   str(opts.bounds) + "-" + \
+                   str(self.length) + ".pickle"
         try:
             pickle_file = open(filename, "rb")
+            self.length = pickle.load(pickle_file)
             self.cplx = pickle.load(pickle_file)
+            self.module_flag = pickle.load(pickle_file)
+            self.map_flag = pickle.load(pickle_file)
+            self.product_flag = pickle.load(pickle_file)
+            self.product_generators = pickle.load(pickle_file)
+            self.cohomology = pickle.load(pickle_file)
             pickle_file.close()
-            self.module_flag = True
-            self.map_flag = True
+            print "Got pickled complex"
         except IOError:
             print "No pickled file"
-        
-        
+

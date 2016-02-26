@@ -40,8 +40,18 @@ def product_test(length, n):
         print tt
         print "\n"
 
-#product_test(4, 10)
-
+# product_test(1, 10)
+# xx = Monomial.tau_list([1])
+# yy = Monomial.tau_list([0,1])
+# zz = Monomial.tau_list([0,0,1])
+# print "x", xx
+# print "y", yy
+# print "z", zz
+# print "xyz", xx*yy*zz
+# print "zxy", zz*xx*yy
+# print "zyx", zz*yy*xx
+# print "xzy", xx*zz*yy
+# print "yzx", yy*zz*xx
 
 def equality_test(length, n):
     for i in range(n):
@@ -54,6 +64,14 @@ def equality_test(length, n):
 def degree_test(length, n):
     for i in range(n):
         xx = Monomial.random(length)
+        print xx
+        print xx.get_degree()
+    for i in range(n):
+        xx = Monomial.term(("t", i))
+        print xx
+        print xx.get_degree()
+    for i in range(n):
+        xx = Monomial.term(("x", i+1))
         print xx
         print xx.get_degree()
 
@@ -103,7 +121,7 @@ def tensmon_simplify(x,y,n):
         zz = TensorMonomial([xx,yy], random.randrange(opts.prime))
         print zz
         zz.simplify()
-        print zz
+        print zz, "\n"
 
 #tensmon_simplify(3,3,100)
 
@@ -128,20 +146,19 @@ def tenspoly_sum(x,y,n):
 def tensmon_eq(x,n):
     for i in range(n):
         xx = TensorMonomial.random(x)
-        print xx
         yy =TensorMonomial.random(x)
-        print yy
-        print xx == yy 
+        xx.simplify()
+        yy.simplify()
+        print xx, yy, xx == yy
 
-        
-#tensmon_eq(3,100)
+#tensmon_eq(3,100000)
 
 def tenspoly_simplify(x,y,n):
     for i in range(n):
         xx = TensorPolynomial.random(x,y)
         print xx
         xx.simplify()
-        print xx
+        print xx, "\n"
 
 #tenspoly_simplify(3,3,100)
 
@@ -182,7 +199,8 @@ def coprod_test(x,n):
     for i in range(n):
         xx = Monomial.random(x)
         print xx
-        print xx.coproduct(), "\n"
+        yy = xx.coproduct()
+        print yy, "\n"
     
 #coprod_test(2, 5)
 
@@ -439,7 +457,7 @@ def cplx_test(length):
                 print thing
 
 #opts.prime = 3
-#opts.bounds = 12
+#opts.bounds = 20
 #cplx_test(7)
 
 def map_test(f,x,n):
@@ -504,16 +522,26 @@ def cohom_test(f):
     C.pickle_cplx()
 
     
-opts.prime = 3
-opts.bounds = 25
-#cplx_test(3)
-#cohom_test(1)
+opts.prime = 5
+opts.bounds = 35
+#cohom_test(3)
+C = CobarComplex(5)
+C.get_pickled_cplx()
+print C.module_flag
+print C.map_flag
+print C.get_maps()[2]._maps.keys()
+#C.extend_complex(5)
+C.pickle_cplx()
+
+C.compute_product_structure()
+for thing in C.product_generators:
+    print thing.get_degree(), thing, "\n"
 
 #C = CobarComplex(4)
 #C.get_pickled_cplx()
 #C.extend_complex(5)
 #C.pickle_cplx()
-cohom_test(5)
+#cohom_test(5)
 
 #C = CobarComplex(7)
 #C.make_map(1)

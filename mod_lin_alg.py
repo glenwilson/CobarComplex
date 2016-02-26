@@ -1,5 +1,4 @@
 from options import opts
-import copy
 import random
 
 class ModVector(object):
@@ -38,9 +37,9 @@ class ModVector(object):
     def __add__(self, other):
         if self.length != other.length:
             raise TypeError("Wrong length")
-        out = ModVector([(self.vector[i] + other.vector[i])\
-                         % opts.prime for \
-                         i in range(self.length)])
+        newvect = [(self.vector[i] + other.vector[i]) % opts.prime for
+                   i in range(self.length)]
+        out = ModVector(newvect)
         return out
 
     def __mul__(self, other):
@@ -55,7 +54,7 @@ class ModVector(object):
         return out
 
     def copy(self):
-        return copy.deepcopy(self)
+        return ModVector(self.vector[:])
     
     def __rmul__(self, n):
         """
@@ -90,14 +89,7 @@ class ModVector(object):
     def is_zero(self):
         return self == ModVector.null(self.length)
 
-    def __getstate__(self):
-        return { 'vector' : self.vector,
-                 'length' : self.length}
-
-    def __setstate__(self, _dict):
-        self.vector = _dict['vector']
-        self.length = _dict['length']
-
+    
 class ModMatrix(object):
     @staticmethod
     def random(m, n):
@@ -129,11 +121,11 @@ class ModMatrix(object):
         if self.col_count == 0:
             self.row_count = 0
         ################
-        self.basis_change = []
+        self.basis_change = None
         self.basis_change_flag = False
-        self.rref = []
+        self.rref = None
         self.rref_flag = False
-        self.row_weights = []
+        self.row_weights = None
         self.row_weights_flag = False
 
     def __eq__(self, other):
@@ -168,7 +160,8 @@ class ModMatrix(object):
         return col
 
     def copy(self):
-        return copy.deepcopy(self)
+        return ModMatrix([row.copy() for row in self.rows])
+
 
     def __add__(self, other):
         if (self.row_count != other.row_count) or (self.col_count != other.col_count):
@@ -369,6 +362,9 @@ class ModMatrix(object):
                 counter += 1
         return counter
 
+    def get_nullity(self):
+        return self.col_count - self.get_rank()
+    
     def get_kernel(self):
         """This will return a list of column vectors (ModMatrix objects) which
         form a basis for the kernel of the given matrix.
